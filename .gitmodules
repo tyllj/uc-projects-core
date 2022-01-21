@@ -1,0 +1,3 @@
+[submodule "lib/CircularBuffer"]
+	path = lib/CircularBuffer
+	url = https://github.com/rlogiacco/CircularBuffer.git
