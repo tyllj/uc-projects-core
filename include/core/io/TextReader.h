@@ -2,12 +2,12 @@
 // Created by tyll on 2022-01-20.
 //
 
-#ifndef SGLOGGER_ABSTRACTTEXTREADER_H
-#define SGLOGGER_ABSTRACTTEXTREADER_H
+#ifndef SGLOGGER_TEXTREADER_H
+#define SGLOGGER_TEXTREADER_H
 
 #include <stdint.h>
 namespace core { namespace io {
-        class AbstractTextReader {
+        class TextReader {
         public:
             /*
              * Reads the next character from the text reader and advances the character position by one character.
@@ -20,6 +20,14 @@ namespace core { namespace io {
             virtual int32_t readLine(char* buffer, int limit) {
                 return readToEnd(buffer, '\n', limit);
             };
+
+            virtual int32_t readLineN(char* buffer, int limit) {
+                int32_t count;
+                count = readLine(buffer, limit -1);
+
+                buffer[count] = '\0';
+                return count;
+            }
 
             /*
              * Reads all characters from the current position to the end of the text reader and returns them as one string.
@@ -42,4 +50,4 @@ namespace core { namespace io {
         };
     }};
 
-#endif //SGLOGGER_ABSTRACTTEXTREADER_H
+#endif //SGLOGGER_TEXTREADER_H

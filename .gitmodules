@@ -1,3 +1,6 @@
 [submodule "lib/CircularBuffer"]
 	path = lib/CircularBuffer
 	url = https://github.com/rlogiacco/CircularBuffer.git
+[submodule "lib/RS-232"]
+	path = lib/RS-232
+	url = https://gitlab.com/Teuniz/RS-232.git

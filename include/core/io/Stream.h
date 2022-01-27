@@ -10,14 +10,23 @@
 namespace core { namespace io {
     class Stream {
     public:
-        virtual bool canRead() { return false; }
-        virtual bool canWrite() { return false; }
-        virtual bool canTimeout() { return false; }
-        virtual int32_t getLength() { return 0; }
-        virtual int32_t getPosition() { return 0; }
+        virtual bool canRead() const { return false; }
+        virtual bool canWrite() const { return false; }
+        virtual bool canTimeout() const { return false; }
+        virtual int32_t getLength() const { return 0; }
+        virtual int32_t getPosition() const { return 0; }
         virtual void close() {  }
         virtual void flush() {  }
         virtual int32_t readByte() { return -1; }
+        virtual int32_t copyTo(Stream destination) {
+            uint8_t b;
+            int32_t count = 0;
+            while ((b = readByte()) != -1) {
+                destination.writeByte(b);
+                count++;
+            }
+            return count;
+        }
         virtual int32_t read(uint8_t* buffer, int32_t offset, int32_t count) {
             int32_t r = -1;
             int32_t c = 0;
@@ -31,7 +40,6 @@ namespace core { namespace io {
             return read(buffer, 0, count);
         }
 
-        virtual int32_t seekBegin(int32_t offset);
         virtual int32_t seek(int32_t offset) {
             int32_t c = 0;
             while (c != offset && readByte() != -1) {

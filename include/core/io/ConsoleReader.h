@@ -7,14 +7,16 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "AbstractTextReader.h"
+#include <conio.h>
+#include "TextReader.h"
 
 namespace core { namespace io {
-        class ConsoleReader : public
-                AbstractTextReader {
+        class ConsoleReader : public TextReader {
         public:
-            virtual int32_t read() override {
-                uint8_t c = getc(stdin);
+            int32_t read() override {
+                uint8_t c = getch();
+                if (c == '\r')
+                    c = '\n';
                 return (int32_t) c;
             };
         };

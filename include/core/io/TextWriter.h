@@ -2,17 +2,19 @@
 // Created by tyll on 2022-01-20.
 //
 
-#ifndef SGLOGGER_ABSTRACTTEXTWRITER_H
-#define SGLOGGER_ABSTRACTTEXTWRITER_H
+#ifndef SGLOGGER_TEXTWRITER_H
+#define SGLOGGER_TEXTWRITER_H
 
 namespace core { namespace io {
-    class AbstractTextWriter {
+    class TextWriter {
     public:
-        virtual void write(const char c) = 0;
+
         virtual void write(const char* str) {
-            for (const char* c = str; c != NULL; c++)
+            for (const char* c = str; *c != '\0'; c++)
                 write(*c);
         }
+        virtual void write(const unsigned char c) = 0;
+
         virtual void writeLine(const char* str) {
             write(str);
             write("\n");
@@ -22,4 +24,4 @@ namespace core { namespace io {
     };
 }};
 
-#endif //SGLOGGER_ABSTRACTTEXTWRITER_H
+#endif //SGLOGGER_TEXTWRITER_H

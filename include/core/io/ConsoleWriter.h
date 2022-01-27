@@ -7,20 +7,20 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "AbstractTextWriter.h"
+#include "TextWriter.h"
 
 namespace core { namespace io {
-        class ConsoleWriter : public AbstractTextWriter {
+        class ConsoleWriter : public TextWriter {
         public:
             virtual void printf(const char *format, ...) {
                 va_list ap;
 
                 va_start(ap, format);
-                int result = vprintf( format, ap);
+                int result = vprintf(format, ap);
                 va_end(ap);
             };
 
-            virtual void write(const char c) {
+            virtual void write(const unsigned char c) {
                 putchar(c);
             }
             virtual void write(const char* bytes, uint32_t count) {
