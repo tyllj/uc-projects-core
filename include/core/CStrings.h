@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 namespace core { namespace cstrings {
+
         uint8_t split(char* str, const char spliterator, char** dest, uint8_t limit) {
             if (limit == 0)
                 return 0;
@@ -42,6 +43,23 @@ namespace core { namespace cstrings {
 
         inline bool equalsCaseInvariant(const char* str0, const char* str1) {
             return stricmp(str0, str1);
+        }
+
+        constexpr const char* empty() {
+            return "";
+        }
+
+        enum NewLineMode {
+            POSIX,
+            MSDOS
+        };
+
+        constexpr const char * newLine(NewLineMode mode) {
+            switch (mode) {
+                case POSIX: return "\n";
+                case MSDOS: return "\r\n";
+                default: return cstrings::empty();
+            }
         }
 }}
 #endif //SGLOGGER_CSTRINGS_H

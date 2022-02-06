@@ -1,0 +1,8 @@
+//
+// Created by tyll on 2022-02-04.
+//
+
+#ifndef SGLOGGER_OBDTRANSCEIVER_H
+#define SGLOGGER_OBDTRANSCEIVER_H
+
+#endif //SGLOGGER_OBDTRANSCEIVER_H

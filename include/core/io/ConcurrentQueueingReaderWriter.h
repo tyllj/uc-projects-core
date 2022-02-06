@@ -10,9 +10,10 @@
 #include "TextWriter.h"
 #include "QueueStream.h"
 #include "core/threading/LockGuard.h"
+#include "etl/mutex.h"
 
 namespace core { namespace io {
-    template <size_t size, typename TMutexImpl>
+    template <size_t size>
     class ConcurrentQueueingReaderWriter : public TextWriter, public TextReader {
     public:
         void printf(const char *format, ...) final {
@@ -30,7 +31,7 @@ namespace core { namespace io {
         }
     private:
         QueueStream<size> _queue;
-        TMutexImpl _mtx;
+        etl::mutex _mtx;
     };
 }}
 #endif //SGLOGGER_CONCURRENTQUEUEINGREADERWRITER_H

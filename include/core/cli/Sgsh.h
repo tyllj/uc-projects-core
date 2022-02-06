@@ -10,21 +10,17 @@
 #include "core/cli/CliProgram.h"
 #include "core/cli/StringMap.h"
 #include "core/cli/CommandNotFound.h"
+#include "core/threading/Sleep.h"
 
 namespace core { namespace cli {
-        typedef core::shared_ptr<core::cli::CliProgram> (*ProgramFactory)(void);
-
-
         class Sgsh : public CliProgram {
             static constexpr uint8_t MAX_WORDS = 10;
         public:
-            explicit Sgsh(core::cli::StringMap<ProgramFactory, 128>& commands) : _commands(commands) {
-
-            }
+            explicit Sgsh(core::cli::StringMap<ProgramFactory, 128>& commands) : _commands(commands) {}
 
             uint8_t execute(io::TextReader& input, io::TextWriter& output, io::Directory& workingDirectory, uint8_t argc, const char **argv) override {
                 LineEditor<80> _lineEditor(input, output);
-                char* command = "";
+                char* command = nullptr;
                 char* words[MAX_WORDS] = {nullptr};
                 uint8_t wordsCount = 0;
                 while (!_isShutdownRequested) {
@@ -45,6 +41,8 @@ namespace core { namespace cli {
                     shared_ptr<core::cli::CliProgram> program = _commands.getOrDefault(command, _commandNotFound)();
                     program->execute(input, output, workingDirectory, cmdArgc, cmdArgv);
                 }
+
+                return 0;
             }
 
         private:
@@ -58,9 +56,11 @@ namespace core { namespace cli {
             }
 
             bool handleBuildIn(const char* command) {
-                if (strcasecmp(command, "exit") == 0) {
+                if (cstrings::equals(command, "exit")) {
                     _isShutdownRequested = true;
+                    return true;
                 }
+                return false;
             }
         };
     }}

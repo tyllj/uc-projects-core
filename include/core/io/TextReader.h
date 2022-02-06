@@ -21,14 +21,6 @@ namespace core { namespace io {
                 return readToEnd(buffer, '\n', limit);
             };
 
-            virtual int32_t readLineN(char* buffer, int limit) {
-                int32_t count;
-                count = readLine(buffer, limit -1);
-
-                buffer[count] = '\0';
-                return count;
-            }
-
             /*
              * Reads all characters from the current position to the end of the text reader and returns them as one string.
              */

@@ -13,7 +13,9 @@ namespace core { namespace cli {
                     output.write(argv[i]);
                     output.write(' ');
                 }
-                output.write("\r\n");
+                output.writeLine("");
+
+                return 0;
             }
         };
     }}

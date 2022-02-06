@@ -4,3 +4,6 @@
 [submodule "lib/RS-232"]
 	path = lib/RS-232
 	url = https://gitlab.com/Teuniz/RS-232.git
+[submodule "lib/etl"]
+	path = lib/etl
+	url = https://github.com/ETLCPP/etl.git

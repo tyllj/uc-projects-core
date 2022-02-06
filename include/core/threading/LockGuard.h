@@ -5,21 +5,21 @@
 #ifndef SGLOGGER_LOCKGUARD_H
 #define SGLOGGER_LOCKGUARD_H
 
+#include "etl/mutex.h"
+
 namespace core { namespace threading {
-    template <typename TMutexImpl>
     class LockGuard {
     public:
-        LockGuard(TMutexImpl& mutexImpl) : _mutexImpl(mutexImpl) {}
-        LockGuard() {
-            _mutexImpl.WaitOne();
+        LockGuard(etl::mutex& mutexImpl) : _mutexImpl(mutexImpl) {
+            _mutexImpl.lock();
         }
 
         ~LockGuard() {
-            _mutexImpl.ReleaseMutex();
+            _mutexImpl.unlock();
         }
 
     private:
-        TMutexImpl& _mutexImpl;
+        etl::mutex& _mutexImpl;
     };
 }}
 

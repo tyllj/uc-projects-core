@@ -6,9 +6,10 @@
 #define SGLOGGER_LINEEDITOR_H
 
 #include <stdio.h>
+#include "core/cli/AnsiCharacters.h"
 #include "core/io/TextReader.h"
 #include "core/io/TextWriter.h"
-#include "AnsiCharacters.h"
+#include "core/threading/Sleep.h"
 
 namespace core { namespace cli {
     template <size_t bufferLength>
@@ -21,8 +22,9 @@ namespace core { namespace cli {
                 _output(output) {}
 
         char* readLine() {
-            int32_t c;
             discardLineBuffer();
+
+            int32_t c;
             do {
                 c = _input.read();
                 if (c > -1) {
@@ -30,9 +32,11 @@ namespace core { namespace cli {
                         handleEscape((uint8_t) c);
                     else
                         handleChar((uint8_t) c);
+                } else {
+                    sleepms(20);
                 }
             } while (!_isReturn);
-            return (char *) (void*) _lineBuffer;
+            return reinterpret_cast<char*>(_lineBuffer);
         }
 
     private:
@@ -169,21 +173,20 @@ namespace core { namespace cli {
         void insert(const uint8_t c) {
             if (isCursorAtBufferEnd())
                 return;
-            for (int i = _lineEnd; i > _cursor; i--) {
+
+            for (int i = _lineEnd; i > _cursor; i--)
                 _lineBuffer[i] = _lineBuffer[i-1];
-            }
+
             _lineEnd++;
-
             _lineBuffer[_cursor] = c;
-
             printBufferFromCursor();
             cursorForward();
         }
 
         void printBufferFromCursor() {
-            for (int i = _cursor; i < _lineEnd; i++){
+            for (int i = _cursor; i < _lineEnd; i++)
                 terminalPut(_lineBuffer[i]);
-            }
+
             terminalCursorBack(_lineEnd - _cursor);
         }
         void cursorBack() {
@@ -243,7 +246,7 @@ namespace core { namespace cli {
         
         core::io::TextReader& _input;
         core::io::TextWriter& _output;
-        uint8_t _lineBuffer[bufferLength] = { NUL };
+        uint8_t _lineBuffer[bufferLength] = { 0 };
         uint8_t _cursor = 0;
         uint8_t _lineEnd = 0;
         bool _isEscape = false;

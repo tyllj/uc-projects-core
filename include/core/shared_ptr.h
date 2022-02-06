@@ -7,11 +7,48 @@
 
 #include <stdint.h>
 #include <stdio.h>
+
+
+#ifdef __AVR__
+#include <avr/interrupt.h>
+#include <util/atomic.h>
+
+namespace core {
+    class avr_atomic_int8_t {
+    public:
+        avr_atomic_int8_t (volatile int8_t value) : val(value) {}
+        int8_t operator ++()
+        {
+            int8_t returnValue;
+            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+                returnValue = ++val;
+            }
+            return returnValue;
+        }
+
+        int8_t operator --()
+        {
+            int8_t returnValue;
+            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+                returnValue = --val;
+            }
+            return returnValue;
+        }
+    private:
+        volatile int8_t val;
+    };
+}
+#define CORE_ATOMIC_IMPL core::avr_atomic_int8_t
+#else
+#include "etl/atomic.h"
+#define CORE_ATOMIC_IMPL etl::atomic_int32_t
+#endif
+
 namespace core {
     template <class T>
     class shared_ptr {
     public:
-        explicit shared_ptr( T* ptr ) : _refCount(new volatile int32_t(1)), _ptr(ptr) {
+        explicit shared_ptr( T* ptr ) : _refCount(new CORE_ATOMIC_IMPL(1)), _ptr(ptr) {
             //printf("%x shared_ptr created.\n", _ptr);
         }
 
@@ -20,22 +57,31 @@ namespace core {
             (*_refCount)++;
         }
 
-        T* get() const {
+        inline T* get() const {
             return _ptr;
         };
-        int32_t use_count() const {
+
+        inline int32_t use_count() const {
             return *_refCount;
         };
 
-        bool unique() const {
+        inline bool unique() const {
             return use_count() == 1;
         }
 
-        T& operator* () const {
+        inline bool isNull() const {
+            return _ptr == nullptr;
+        }
+
+        inline bool notNull() const {
+            return _ptr != nullptr;
+        }
+
+        inline T& operator* () const {
             return *(_ptr);
         }
 
-        T* operator-> () const {
+        inline T* operator-> () const {
             return _ptr;
         }
 
@@ -49,8 +95,8 @@ namespace core {
         }
 
     private:
-        T* const _ptr;
-        volatile int32_t* const _refCount;
+        T* _ptr;
+        CORE_ATOMIC_IMPL* _refCount;
     };
 }
 #endif //SGLOGGER_SHARED_PTR_H
