@@ -1,6 +1,7 @@
+
+#ifndef PLATFORMIO
 #define ETL_NO_STL
 
-#include <iostream>
 #include <unistd.h>     //STDIN_FILENO
 #include "core/io/ConsoleWriter.h"
 #include "core/io/ConsoleReader.h"
@@ -12,8 +13,9 @@
 #include "core/cli/StringMap.h"
 #include "core/cli/Echo.h"
 #include "core/cli/Sgsh.h"
-#include "core/threading/sleep.h"
-
+#include "core/threading/Sleep.h"
+#include "core/net/canbus/ObdTransceiver.h"
+#include "etl/delegate.h"
 struct locals_t {
     core::io::ConsoleReader& in;
     core::io::ConsoleWriter& out;
@@ -33,6 +35,18 @@ void* listenOnConsole(void* tl) {
     }
     return nullptr;
 }
+
+struct intWrapper {
+    intWrapper(int i) : _i(i) {}
+    intWrapper(intWrapper& x) : _i(x._i){}
+    intWrapper(intWrapper&& x) : _i(x._i){}
+    ~intWrapper() {}
+    int _i;
+};
+
+void blubb(intWrapper i)  {
+}
+
 int main() {
     core::io::ConsoleReader in;
     core::io::ConsoleWriter out;
@@ -61,5 +75,14 @@ int main() {
     shell->execute(ttyin, ttyout, wd, 0, nullptr);
 
     //pthread_cancel(listenerThread);
+
+    intWrapper i { 3 };
+
+    etl::delegate<void(intWrapper)> blubbDelegate;
+    blubbDelegate.set<blubb>();
+
+    blubbDelegate(i);
     return 0;
 }
+
+#endif

@@ -6,9 +6,12 @@
 #define SGLOGGER_ISOTPSOCKET_H
 
 #include <stdint.h>
+#include <string.h>
+#include "etl/delegate.h"
 #include "core/events/Observable.h"
 #include "CanInterface.h"
 #include "core/reference_cast.h"
+
 
 namespace core { namespace net { namespace canbus {
     enum IsoTpHeaderType {
@@ -21,7 +24,8 @@ namespace core { namespace net { namespace canbus {
     enum IsoTpFlowControlType {
         ISOTP_CONTINUE = 0,
         ISOTP_WAIT = 1,
-        ISOTP_OVERFLOW = 2
+        ISOTP_OVERFLOW = 2,
+        ISOTP_NO_FC = 255
     };
 
     union IsoTpFrame {
@@ -61,7 +65,7 @@ namespace core { namespace net { namespace canbus {
         IsoTpFlowControlType getFlowControlType() {
             if (getHeaderType() == ISOTP_FLOW_CONTROL)
                 return (IsoTpFlowControlType)(_canData.payload[0] & 0x0F);
-            return ISOTP_CONTINUE;
+            return ISOTP_NO_FC;
         }
         uint8_t getSeparationTimeMillis() {
             return 0;
@@ -105,7 +109,8 @@ namespace core { namespace net { namespace canbus {
     public:
 
         explicit IsoTpSocket(CanInterface& canInterface, canid_t canId) : _canInterface(canInterface), _canId(canId) {
-            _canInterface.newData() += canFrameReceived
+            canFrameReceived.set<IsoTpSocket, &IsoTpSocket::onDataReceived>(*this);
+            _canInterface.newData() += canFrameReceived;
         }
 
         ~IsoTpSocket() {
@@ -119,6 +124,7 @@ namespace core { namespace net { namespace canbus {
             length &= 0x0FFF;
             while (position < length) {
                 CanFrame frame;
+                setDefaultBytes(frame.payload);
                 frame.id = _canId;
                 switch (packageType) {
                     case ISOTP_SINGLE:
@@ -140,26 +146,33 @@ namespace core { namespace net { namespace canbus {
                 packageType = ISOTP_CONSECUTIVE;
             }
         }
-        void copy(uint16_t& position, uint16_t& length, uint8_t bytes, uint8_t* src, uint8_t* dst) {
-            for (uint16_t i = 0; i < 6 && position < length; position++, i++) {
-                dst[i] = src[i];
-            }
-        }
-
-        void discardPacket() {
-            if (packet.notNull())
-                packet = shared_ptr<IsoTpPacket>(nullptr);
-        }
 
     private:
-        void onDataReceived(Observable<CanFrame>& o, CanFrame canFrame) {
+            void copy(uint16_t& position, uint16_t& length, uint8_t bytes, uint8_t* src, uint8_t* dst) {
+                for (uint16_t i = 0; i < 6 && position < length; position++, i++) {
+                    dst[i] = src[i];
+                }
+            }
+
+            void setDefaultBytes(uint8_t* payload) {
+                for (uint8_t i = 0; i < 8; i++)
+                    payload[i] = 0xCC;
+            }
+
+            void discardPacket() {
+                if (packet.notNull())
+                    packet = shared_ptr<IsoTpPacket>(nullptr);
+            }
+
+        void onDataReceived(CanFrame canFrame) {
             IsoTpFrame& f = reference_cast<CanFrame, IsoTpFrame>(canFrame);
-            bool isMessageStart = (f.getHeaderType() == ISOTP_SINGLE || f.getHeaderType() == ISOTP_FIRST);
+            bool isMessageStart = f.getHeaderType() == ISOTP_SINGLE || f.getHeaderType() == ISOTP_FIRST;
+            bool isMultiPartMessage = f.getHeaderType() == ISOTP_FIRST || f.getHeaderType() == ISOTP_CONSECUTIVE;
             bool isContinuation = f.getHeaderType() == ISOTP_CONSECUTIVE;
             bool isFlowControl = f.getHeaderType() == ISOTP_FLOW_CONTROL;
 
             if (isMessageStart) {
-                packet = shared_ptr(new IsoTpPacket(f.getDataByteCount())); // overwrites any started packet
+                packet = shared_ptr<IsoTpPacket>(new IsoTpPacket(f.getDataByteCount())); // overwrites any started packet
                 packet->appendFrame(f);
             } else if (isContinuation && packet.notNull()) {
                 packet->appendFrame(f);
@@ -170,16 +183,29 @@ namespace core { namespace net { namespace canbus {
                 discardPacket();
             }
 
-            if (packet.notNull() && packet->isFull()) {
-                notify(packet);
+            if (packet.isNull())
+                return;
+
+            if (packet->isFull()) {
+                //core::shared_ptr<core::net::canbus::IsoTpPacket> p = packet;
+                this->notify(core::shared_ptr<core::net::canbus::IsoTpPacket>(packet));
                 discardPacket(); // Event listener must have taken ownership now.
+            } else if (isMultiPartMessage && isMessageStart) {
+                sendContinueAllRequest();
             }
+        }
+
+        void sendContinueAllRequest() {
+            CanFrame frame;
+            frame.id = _canId;
+            frame.payload[0] = 0x30; // 0x30 = ISOTP flow control + 0x00 = continue to send
+            _canInterface.send(frame);
         }
 
         CanInterface& _canInterface;
         const canid_t _canId;
-        shared_ptr<IsoTpPacket> packet = shared_ptr<IsoTpPacket>(nullptr);
-        shared_ptr<IEventHandler<events::Observable<CanFrame>&, CanFrame>> canFrameReceived = makeEventHandler(*this, &IsoTpSocket::onDataReceived);
+        shared_ptr<IsoTpPacket> packet;
+        etl::delegate<void(core::net::canbus::CanFrame)> canFrameReceived;
 
     };
 }}}

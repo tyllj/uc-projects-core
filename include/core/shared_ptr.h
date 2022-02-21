@@ -12,11 +12,16 @@
 #ifdef __AVR__
 #include <avr/interrupt.h>
 #include <util/atomic.h>
-
 namespace core {
-    class avr_atomic_int8_t {
+    class _avr_atomic_int8_t {
     public:
-        avr_atomic_int8_t (volatile int8_t value) : val(value) {}
+        explicit _avr_atomic_int8_t (volatile int8_t value) : val(value) {}
+        operator int32_t() {
+            return val;
+        }
+        operator int8_t() {
+            return val;
+        }
         int8_t operator ++()
         {
             int8_t returnValue;
@@ -34,27 +39,77 @@ namespace core {
             }
             return returnValue;
         }
+
+        int8_t operator ++(int) {
+            int8_t returnValue;
+            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+                returnValue = val++;
+            }
+            return returnValue;
+        }
+
+        int8_t operator --(int) {
+            int8_t returnValue;
+            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+                returnValue = val--;
+            }
+            return returnValue;
+        }
     private:
         volatile int8_t val;
     };
 }
-#define CORE_ATOMIC_IMPL core::avr_atomic_int8_t
+#define _CORE_ATOMIC_IMPL core::_avr_atomic_int8_t
 #else
 #include "etl/atomic.h"
-#define CORE_ATOMIC_IMPL etl::atomic_int32_t
+#define _CORE_ATOMIC_IMPL etl::atomic_int8_t
 #endif
 
 namespace core {
     template <class T>
     class shared_ptr {
     public:
-        explicit shared_ptr( T* ptr ) : _refCount(new CORE_ATOMIC_IMPL(1)), _ptr(ptr) {
-            //printf("%x shared_ptr created.\n", _ptr);
+        constexpr shared_ptr() : _refCount(nullptr), _ptr(nullptr) {}
+        explicit shared_ptr(T* const ptr ) : _refCount(new _CORE_ATOMIC_IMPL(1)), _ptr(ptr) {}
+
+        shared_ptr(const shared_ptr<T>& ptr) : _refCount(ptr._refCount), _ptr(ptr._ptr) {
+            if (_refCount)
+                (*_refCount)++;
         }
 
-        shared_ptr( shared_ptr<T>& ptr ) : _refCount(ptr._refCount), _ptr(ptr._ptr) {
-            //printf("%x shared_ptr copied.\n", _ptr);
-            (*_refCount)++;
+
+        shared_ptr(shared_ptr<T>&& ptr) noexcept : _refCount(ptr._refCount), _ptr(ptr._ptr) {
+            ptr._refCount = nullptr;
+            ptr._ptr = nullptr;
+        }
+
+        ~shared_ptr() {
+            if (_refCount && --(*_refCount) == 0) {
+                delete _ptr;
+                delete _refCount;
+            }
+        }
+
+        shared_ptr& operator=(const shared_ptr& other) {
+            shared_ptr<T>(other).swap(*this);
+            return *this;
+        }
+
+        void swap(shared_ptr& other) {
+            _CORE_ATOMIC_IMPL* oldRefCount = _refCount;
+            T* oldPtr = _ptr;
+            _refCount = other._refCount;
+            _ptr = other._ptr;
+            other._refCount = oldRefCount;
+            other._ptr = oldPtr;
+        }
+
+        void reset() {
+            shared_ptr().swap(*this);
+        }
+
+        void reset(T* ptr) {
+            shared_ptr(ptr).swap(*this);
         }
 
         inline T* get() const {
@@ -62,11 +117,11 @@ namespace core {
         };
 
         inline int32_t use_count() const {
-            return *_refCount;
+            return (int32_t) *_refCount;
         };
 
         inline bool unique() const {
-            return use_count() == 1;
+            return ((int8_t) *_refCount) == 1;
         }
 
         inline bool isNull() const {
@@ -85,18 +140,9 @@ namespace core {
             return _ptr;
         }
 
-        ~shared_ptr() {
-            //printf("%x shared_ptr lost scope.\n", _ptr);
-            if (--(*_refCount) == 0) {
-                //printf("%x shared_ptr destroyed.\n", _ptr);
-                delete _ptr;
-                delete _refCount;
-            }
-        }
-
     private:
         T* _ptr;
-        CORE_ATOMIC_IMPL* _refCount;
+        _CORE_ATOMIC_IMPL* _refCount;
     };
 }
 #endif //SGLOGGER_SHARED_PTR_H

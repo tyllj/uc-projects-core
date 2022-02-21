@@ -9,11 +9,10 @@
 #include "etl/queue.h"
 #include "core/events/Observable.h"
 #include "core/threading/LockGuard.h"
-#include "core/EventHandler.h"
 
 namespace core { namespace events {
         template <typename TData, size_t QueueSize>
-        class QueueingObservable : public Observable<TData> {
+        class QueueingObservable : public ::core::events::Observable<TData> {
         public:
 
             explicit QueueingObservable(Observable<TData>& observable) : _observable(observable) {

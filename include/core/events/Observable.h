@@ -6,19 +6,20 @@
 #define SGLOGGER_OBSERVABLE_H
 
 #include "core/Event.h"
-#include "core/EventHandler.h"
 
 namespace core { namespace events {
     template <typename TData>
     class Observable {
     public:
-        Event<Observable<TData>&, TData>& newData() { return _newDataEvent; }
+        Event<TData>& newData() { return _newDataEvent; }
 
     protected:
-        void notify(TData data) { _newDataEvent.invoke(*this, data); }
+        void notify(TData data) {
+            _newDataEvent.invoke(data);
+        }
 
     private:
-        InvokableEvent<Observable<TData>&, TData> _newDataEvent;
+        InvokableEvent<TData> _newDataEvent;
     };
 }}
 

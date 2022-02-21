@@ -7,7 +7,14 @@
 
 #include <stdio.h>
 #include <stdint.h>
+
+
+#if __has_include (<conio.h>)
 #include <conio.h>
+#else
+#include "conio_nc.h"
+#endif
+
 #include "TextReader.h"
 
 namespace core { namespace io {

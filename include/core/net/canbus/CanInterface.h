@@ -25,7 +25,7 @@ namespace core { namespace net { namespace canbus {
     struct CanFrame {
         canid_t id;
         bool isRemoteRequest = false; // value of the rtr-bit
-        uint8_t length; // value of the dlc
+        uint8_t length = 8; // value of the dlc
         uint8_t payload[8];
     };
 
@@ -37,8 +37,6 @@ namespace core { namespace net { namespace canbus {
         virtual void setFilterMask(canid_t filter) = 0;
         virtual void send(CanFrame& canFrame) = 0;
         virtual void send(shared_ptr<CanFrame> canFrame) = 0;
-
-
     };
 }}}
 
