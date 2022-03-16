@@ -8,16 +8,18 @@
 // Conversion functions which are not part of ISO-CPP. The AVR-libc implements these in avr assembly language.
 // For all other platforms pure C++ versions are provided here.
 
-#ifdef __AVR__
-// Those functions are already defined in the AVR libc.
+#ifndef __AVR__ // Those functions are already defined in the AVR libc.
+
 #include <stdlib.h>
-#else
+#include <stdint.h>
 #include <string.h>
+#include <math.h>
+
 namespace {
-    inline void reverse(char* begin, char* end) {
+    inline void reverse(char *begin, char *end) {
         char *is = begin;
         char *ie = end - 1;
-        while(is < ie) {
+        while (is < ie) {
             char tmp = *ie;
             *ie = *is;
             *is = tmp;
@@ -26,13 +28,13 @@ namespace {
         }
     }
 
-    inline char* ltoa(long value, char* result, int base) {
-        if(base < 2 || base > 16) {
+    inline char *ltoa(long value, char *result, int base) {
+        if (base < 2 || base > 16) {
             *result = 0;
             return result;
         }
 
-        char* out = result;
+        char *out = result;
         long quotient = abs(value);
 
         do {
@@ -40,10 +42,10 @@ namespace {
             *out = "0123456789abcdef"[quotient - (tmp * base)];
             ++out;
             quotient = tmp;
-        } while(quotient);
+        } while (quotient);
 
         // Apply negative sign
-        if(value < 0)
+        if (value < 0)
             *out++ = '-';
 
         reverse(result, out);
@@ -51,13 +53,13 @@ namespace {
         return result;
     }
 
-    inline char* ultoa(unsigned long value, char* result, int base) {
-        if(base < 2 || base > 16) {
+    inline char *ultoa(unsigned long value, char *result, int base) {
+        if (base < 2 || base > 16) {
             *result = 0;
             return result;
         }
 
-        char* out = result;
+        char *out = result;
         unsigned long quotient = value;
 
         do {
@@ -65,22 +67,14 @@ namespace {
             *out = "0123456789abcdef"[quotient - (tmp * base)];
             ++out;
             quotient = tmp;
-        } while(quotient);
+        } while (quotient);
 
         reverse(result, out);
         *out = 0;
         return result;
     }
 
-    inline char *itoa(int value, char *string, int radix) {
-        return ltoa(value, string, radix);
-    }
-
-    inline char *utoa(unsigned long value, char *string, int radix) {
-        return ultoa(value, string, radix);
-    }
-
-    inline char * dtostrf(double number, signed int width, unsigned int prec, char *s) {
+    inline char *dtostrf(double number, signed int width, unsigned int prec, char *s) {
         bool negative = false;
 
         if (isnan(number)) {
@@ -92,11 +86,11 @@ namespace {
             return s;
         }
 
-        char* out = s;
+        char *out = s;
 
         int fillme = width; // how many cells to fill for the integer part
         if (prec > 0) {
-            fillme -= (prec+1);
+            fillme -= (prec + 1);
         }
 
         // Handle negative numbers
@@ -138,9 +132,9 @@ namespace {
         digitcount += prec;
         int8_t digit = 0;
         while (digitcount-- > 0) {
-            digit = (int8_t)number;
+            digit = (int8_t) number;
             if (digit > 9) digit = 9; // insurance
-            *out++ = (char)('0' | digit);
+            *out++ = (char) ('0' | digit);
             if ((digitcount == prec) && (prec > 0)) {
                 *out++ = '.';
             }
@@ -152,6 +146,16 @@ namespace {
         *out = 0;
         return s;
     }
+
+#ifdef CORE_BUILDIN_ITOA
+    inline char* itoa(int value, char *string, int radix) {
+        return ltoa(value, string, radix);
+    }
+
+    inline char* utoa(unsigned long value, char *string, int radix) {
+        return ultoa(value, string, radix);
+    }
+#endif
 }
 #endif //__AVR__
 #endif //FIRMWARE_ITOA_H

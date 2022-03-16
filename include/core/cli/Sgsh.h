@@ -18,7 +18,7 @@ namespace core { namespace cli {
         public:
             explicit Sgsh(core::cli::StringMap<ProgramFactory, 128>& commands) : _commands(commands) {}
 
-            uint8_t execute(io::TextReader& input, io::TextWriter& output, io::Directory& workingDirectory, uint8_t argc, const char **argv) override {
+            uint8_t execute(io::TextReader& input, io::TextWriter& output, io::DirectoryInfo& workingDirectory, uint8_t argc, const char **argv) override {
                 LineEditor<80> _lineEditor(input, output);
                 char* command = nullptr;
                 char* words[MAX_WORDS] = {nullptr};

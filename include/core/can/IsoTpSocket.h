@@ -9,11 +9,11 @@
 #include <string.h>
 #include "etl/delegate.h"
 #include "core/events/Observable.h"
-#include "CanInterface.h"
+#include "core/can/CanInterface.h"
 #include "core/reference_cast.h"
 
 
-namespace core { namespace net { namespace canbus {
+namespace core { namespace can {
     enum IsoTpHeaderType {
         ISOTP_SINGLE = 0,
         ISOTP_FIRST = 1,
@@ -59,7 +59,7 @@ namespace core { namespace net { namespace canbus {
                 case ISOTP_SINGLE: return &_canData.payload[1];
                 case ISOTP_FIRST: return &_canData.payload[2];
                 case ISOTP_CONSECUTIVE: return &_canData.payload[1];
-                default: _canData.payload;
+                default: return _canData.payload;
             }
         }
         IsoTpFlowControlType getFlowControlType() {
@@ -161,7 +161,7 @@ namespace core { namespace net { namespace canbus {
 
             void discardPacket() {
                 if (packet.notNull())
-                    packet = shared_ptr<IsoTpPacket>(nullptr);
+                    packet = core::shared_ptr<IsoTpPacket>();
             }
 
         void onDataReceived(CanFrame canFrame) {
@@ -187,8 +187,8 @@ namespace core { namespace net { namespace canbus {
                 return;
 
             if (packet->isFull()) {
-                //core::shared_ptr<core::net::canbus::IsoTpPacket> p = packet;
-                this->notify(core::shared_ptr<core::net::canbus::IsoTpPacket>(packet));
+                //core::shared_ptr<core::can::canbus::IsoTpPacket> p = packet;
+                this->notify(core::shared_ptr<core::can::IsoTpPacket>(packet));
                 discardPacket(); // Event listener must have taken ownership now.
             } else if (isMultiPartMessage && isMessageStart) {
                 sendContinueAllRequest();
@@ -205,8 +205,8 @@ namespace core { namespace net { namespace canbus {
         CanInterface& _canInterface;
         const canid_t _canId;
         shared_ptr<IsoTpPacket> packet;
-        etl::delegate<void(core::net::canbus::CanFrame)> canFrameReceived;
+        etl::delegate<void(core::can::CanFrame)> canFrameReceived;
 
     };
-}}}
+}}
 #endif //SGLOGGER_ISOTPSOCKET_H

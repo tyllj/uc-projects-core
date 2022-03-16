@@ -1,5 +1,5 @@
 
-#ifndef PLATFORMIO
+#ifdef CORE_TESTAPP
 #define ETL_NO_STL
 
 #include <unistd.h>     //STDIN_FILENO
@@ -14,74 +14,30 @@
 #include "core/cli/Echo.h"
 #include "core/cli/Sgsh.h"
 #include "core/threading/Sleep.h"
-#include "core/net/canbus/ObdTransceiver.h"
+#include "core/can/ObdTransceiver.h"
+#include "core/can/Channel.h"
 #include "etl/delegate.h"
-struct locals_t {
-    core::io::ConsoleReader& in;
-    core::io::ConsoleWriter& out;
-    core::io::StreamReader<core::io::ports::SerialPort>& ttyin;
-    core::io::StreamWriter<core::io::ports::SerialPort>& ttyout;
-    core::io::ConcurrentQueueingReaderWriter<128>& inout;
-};
-
-void* listenOnConsole(void* tl) {
-    locals_t& locals = *(locals_t*) tl;
-
-    for(;;) {
-        int32_t c = locals.ttyin.read();
-        if (c != -1)
-            locals.inout.write(c);
-        sleepms(50);
-    }
-    return nullptr;
-}
-
-struct intWrapper {
-    intWrapper(int i) : _i(i) {}
-    intWrapper(intWrapper& x) : _i(x._i){}
-    intWrapper(intWrapper&& x) : _i(x._i){}
-    ~intWrapper() {}
-    int _i;
-};
-
-void blubb(intWrapper i)  {
-}
 
 int main() {
-    core::io::ConsoleReader in;
-    core::io::ConsoleWriter out;
     core::io::ports::SerialPort port;
     port.setPortName("COM3");
     port.setBaudRate(9600);
+    port.open();
+
     core::io::StreamReader ttyin(port);
     core::io::StreamWriter ttyout(port);
     ttyout.setNewLine(core::cstrings::MSDOS);
-    core::io::ConcurrentQueueingReaderWriter<128> inout;
-    core::cli::LineEditor<128> commandLine(inout, ttyout);
-    locals_t locals {in, out, ttyin, ttyout, inout};
 
     core::shared_ptr<core::cli::StringMap<core::cli::ProgramFactory, 128>> programs(new core::cli::StringMap<core::cli::ProgramFactory, 128>());
     programs->addOrUpdate("echo", []() { return core::shared_ptr<core::cli::CliProgram>(new core::cli::Echo()); });
     programs->addOrUpdate("sgsh", [&]() { return core::shared_ptr<core::cli::CliProgram>(new core::cli::Sgsh(*programs)); });
 
-    port.open();
-
-    //pthread_t listenerThread;
-    //pthread_create(&listenerThread, NULL, listenOnConsole, &locals);
-
-    core::io::Directory wd;
+    core::io::DirectoryInfo wd;
     core::shared_ptr<core::cli::CliProgram> shell(new core::cli::Sgsh(*programs));
 
     shell->execute(ttyin, ttyout, wd, 0, nullptr);
 
-    //pthread_cancel(listenerThread);
-
-    intWrapper i { 3 };
-
-    etl::delegate<void(intWrapper)> blubbDelegate;
-    blubbDelegate.set<blubb>();
-
-    blubbDelegate(i);
+    port.close();
     return 0;
 }
 

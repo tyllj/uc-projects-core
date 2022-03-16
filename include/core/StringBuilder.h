@@ -218,14 +218,15 @@ namespace core {
             seek(strlen(ptr()));
         }
 
-        uint8_t decimalLength(uint8_t value) {
+        uint8_t decimalLength(uint8_t value) const {
             if (value < 10)
                 return 1;
             if (value < 100)
                 return 2;
             return 3;
         }
-        uint8_t decimalLength(uint16_t value) {
+
+        uint8_t decimalLength(uint16_t value) const {
             if (value < 10)
                 return 1;
             if (value < 100)
@@ -236,7 +237,8 @@ namespace core {
                 return 4;
             return 5;
         }
-        uint8_t decimalLength(uint32_t value) {
+
+        uint8_t decimalLength(uint32_t value) const {
             if (value <= UINT16_MAX)
                 return decimalLength((uint16_t) value);
             uint8_t length = 4;
@@ -246,7 +248,7 @@ namespace core {
             return length;
         }
 
-        uint8_t decimalLength(int8_t value) {
+        uint8_t decimalLength(int8_t value) const {
             if (value <= -100)
                 return 4;
             if (value <= -10)
@@ -259,7 +261,8 @@ namespace core {
                 return 2;
             return 3;
         }
-        uint8_t decimalLength(int16_t value) {
+
+        uint8_t decimalLength(int16_t value) const {
             if (value <= -10000)
                 return 6;
             if (value <= -1000)
@@ -280,7 +283,8 @@ namespace core {
                 return 4;
             return 5;
         }
-        uint8_t decimalLength(int32_t value) {
+
+        uint8_t decimalLength(int32_t value) const {
             if (value <= INT16_MAX && value >= INT16_MIN)
                 return decimalLength((int16_t) value);
             if (value < 0) {
@@ -299,11 +303,11 @@ namespace core {
         }
 
         void lineBreak() {
-            append(core::cstrings::newLine(cstrings::POSIX));
+            append(::core::cstrings::newLine(cstrings::POSIX));
         }
 
-        void lineBreak(core::cstrings::NewLineMode mode) {
-            append(mode);
+        void lineBreak(::core::cstrings::NewLineMode mode) {
+            append(::core::cstrings::newLine(mode));
         }
 
         const char* toString() const { return _buffer;}
@@ -339,4 +343,5 @@ namespace core {
         size_t _length;
     };
 }
+
 #endif //FIRMWARE_STRINGBUILDER_H

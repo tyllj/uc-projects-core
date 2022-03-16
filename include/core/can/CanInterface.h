@@ -11,7 +11,7 @@
 
 typedef uint16_t canid_t;
 
-namespace core { namespace net { namespace canbus {
+namespace core { namespace can {
     /*
      * CAN Bus filter Rules:
 
@@ -38,6 +38,6 @@ namespace core { namespace net { namespace canbus {
         virtual void send(CanFrame& canFrame) = 0;
         virtual void send(shared_ptr<CanFrame> canFrame) = 0;
     };
-}}}
+}}
 
 #endif //SGLOGGER_CANINTERFACE_H

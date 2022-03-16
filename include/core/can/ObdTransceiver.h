@@ -5,18 +5,25 @@
 #ifndef SGLOGGER_OBDTRANSCEIVER_H
 #define SGLOGGER_OBDTRANSCEIVER_H
 
-#include "core/async/Eventual.h"
 #include "core/Math.h"
-#include "CanInterface.h"
-#include "IsoTpSocket.h"
-#include "ObdData.h"
+#include "core/async/Eventual.h"
+#include "core/can/CanInterface.h"
+#include "core/can/IsoTpSocket.h"
+#include "core/can/ObdData.h"
 
-
-namespace core { namespace net { namespace canbus {
+namespace core { namespace can {
     class ObdTransceiver {
     public:
-        explicit ObdTransceiver(CanInterface& canInterface) : _canInterface(canInterface), _responseSocket(canInterface, 0x7DF) {
-            packetReceivedCallback.set<ObdTransceiver, &ObdTransceiver::onResponseReceived>(*this);
+        explicit ObdTransceiver(CanInterface& canInterface) :
+            _canInterface(canInterface),
+            _responseSocket(canInterface, 0x7DF),
+            _pendingResponse(nullptr) {
+            _packetReceivedCallback.set<ObdTransceiver, &ObdTransceiver::onResponseReceived>(*this);
+        }
+
+        ~ObdTransceiver() {
+            if (isRequestPending())
+                terminateRequest();
         }
 
         // Caller provides memory for response. Object referenced by response must outlive the request cycle!
@@ -24,18 +31,21 @@ namespace core { namespace net { namespace canbus {
             _request = request; // request PID list is copied into instance variable
             _pendingResponse = &response;
             _pendingResponse->reset();
-            _responseSocket.newData() += packetReceivedCallback;
+            _responseSocket.newData() += _packetReceivedCallback;
         }
+
         shared_ptr<core::async::Eventual<MultiResponse>> requestAsync(MultiRequest& request) {
             shared_ptr<core::async::Eventual<MultiResponse>> response(new core::async::Eventual<MultiResponse>());
             this->requestAsync(request, *response);
             return response;
         }
+
         bool isRequestPending() {
             return _pendingResponse != nullptr;
         }
+
         void terminateRequest() {
-            _responseSocket.newData() -= packetReceivedCallback;
+            _responseSocket.newData() -= _packetReceivedCallback;
             _pendingResponse = nullptr;
         }
 
@@ -75,12 +85,13 @@ namespace core { namespace net { namespace canbus {
             }
         }
 
+    private:
         MultiRequest _request;
         core::async::Eventual<MultiResponse>* _pendingResponse;
         CanInterface& _canInterface;
         IsoTpSocket _responseSocket;
-        etl::delegate<void(shared_ptr<core::net::canbus::IsoTpPacket>)> packetReceivedCallback;
+        etl::delegate<void(shared_ptr<core::can::IsoTpPacket>)> _packetReceivedCallback;
     };
-}}}
+}}
 
 #endif //SGLOGGER_OBDTRANSCEIVER_H

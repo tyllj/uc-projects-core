@@ -6,7 +6,8 @@
 #define FIRMWARE_OBDDATA_H
 
 #include <stdint.h>
-namespace core { namespace net { namespace canbus {
+
+namespace core { namespace can {
     struct ObdValue {
     public:
         inline explicit ObdValue(const uint32_t rawValue) : _rawInt(rawValue) {}
@@ -117,6 +118,6 @@ namespace core { namespace net { namespace canbus {
             return _dataLength;
         }
     };
-}}}
+}}
 
 #endif //FIRMWARE_OBDDATA_H

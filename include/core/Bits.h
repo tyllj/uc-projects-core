@@ -39,7 +39,8 @@ inline uint8_t highByte(uint16_t word) {
 #ifndef bitWrite
 #define bitWrite(value, bit, bitvalue) ((bitvalue) ? bitSet(value, bit) : bitClear(value, bit))
 #endif
-
+#ifndef bit
 #define bit(b) (1UL << (b))
+#endif
 
 #endif //SGLOGGER_BITS_H

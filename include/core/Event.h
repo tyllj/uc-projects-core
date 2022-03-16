@@ -10,8 +10,8 @@
 #include "etl/list.h"
 #include "shared_ptr.h"
 
-#ifndef _CORE_EVENT_SIZE
-#define _CORE_EVENT_SIZE (8)
+#ifndef CORE_EVENT_SIZE
+#define CORE_EVENT_SIZE (8)
 #endif
 
 namespace core {
@@ -29,23 +29,27 @@ namespace core {
         }
 
         void add(const etl::delegate<void(TArgs)>& handler) {
-            _invokationList.push_back(handler);
+            _invocationList.push_back(handler);
         }
 
         void remove(const etl::delegate<void(TArgs)>& handler) {
-            _invokationList.remove(handler);
+            _invocationList.remove(handler);
         }
 
     protected:
         void invoke(TArgs args) {
-            for (etl::delegate<void(TArgs)>& d : _invokationList){
+            for (etl::delegate<void(TArgs)>& d : _invocationList){
                 d(args);
             }
         }
 
+        bool hasListeners() {
+            return this->_invocationList.empty();
+        }
+
 
     private:
-        etl::list<etl::delegate<void(TArgs)>, _CORE_EVENT_SIZE> _invokationList;
+        etl::list<etl::delegate<void(TArgs)>, CORE_EVENT_SIZE> _invocationList;
     };
 
     template<class TArgs>
@@ -61,8 +65,12 @@ namespace core {
             return *this;
         }
 
-        void invoke(TArgs args)  {
+        void invoke(TArgs args) {
             this->Event<TArgs>::invoke(args);
+        }
+
+        bool hasListeners() {
+            return hasListeners();
         }
     };
 }

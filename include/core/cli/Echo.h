@@ -8,7 +8,7 @@
 
 namespace core { namespace cli {
         class Echo : public CliProgram {
-            uint8_t execute(io::TextReader& input, io::TextWriter& output, io::Directory& workingDirectory, uint8_t argc, const char **argv) override {
+            uint8_t execute(io::TextReader& input, io::TextWriter& output, io::DirectoryInfo& workingDirectory, uint8_t argc, const char **argv) override {
                 for (uint8_t i = 0; i < argc; i++) {
                     output.write(argv[i]);
                     output.write(' ');

@@ -77,7 +77,6 @@ namespace core {
                 (*_refCount)++;
         }
 
-
         shared_ptr(shared_ptr<T>&& ptr) noexcept : _refCount(ptr._refCount), _ptr(ptr._ptr) {
             ptr._refCount = nullptr;
             ptr._ptr = nullptr;

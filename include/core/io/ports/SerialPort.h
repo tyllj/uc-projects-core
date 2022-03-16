@@ -41,7 +41,6 @@ public:
         if (!_isOpen || RS232_PollComport(_portNumber, &byte, 1) != 1)
             return -1;
         return (int32_t) byte;
-
     }
     void writeByte(uint8_t byte) override {
         if (_isOpen)
@@ -50,7 +49,8 @@ public:
     ~SerialPort() {
         close();
     }
-private:
+
+
     bool _isOpen = false;
     int _portNumber =  4;
     int _baudRate = 9600;

@@ -31,7 +31,7 @@ namespace core { namespace io {
             virtual int32_t readToEnd(char* buffer, char endMark, int32_t limit) {
                 int32_t r = -1;
                 int32_t c = 0;
-                while (c != limit-1 && (r = read()) != -1 && r != (int32_t)endMark) {
+                while (c < limit && (r = read()) != -1 && r != (int32_t)endMark) {
                     buffer[c] = (char) r;
                     c++;
                 }

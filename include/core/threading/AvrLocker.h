@@ -5,6 +5,8 @@
 #ifndef FIRMWARE_AVRLOCKER_H
 #define FIRMWARE_AVRLOCKER_H
 
+#ifdef __AVR__
+
 #include "core/Bits.h"
 #include "avr/interrupt.h"
 
@@ -25,5 +27,5 @@ namespace core { namespace threading {
             static inline bool _iFlagBeforLock = false;
         };
 }}
-
+#endif //__AVR__
 #endif //FIRMWARE_AVRLOCKER_H
