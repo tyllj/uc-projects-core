@@ -9,7 +9,7 @@
 namespace core { namespace cli {
         class CommandNotFound : public CliProgram {
             uint8_t execute(io::TextReader& input, io::TextWriter& output, io::DirectoryInfo& workingDirectory, uint8_t argc, const char **argv) override {
-                output.writeLine("Not a valid command.");
+                output.writeLine("Command not found.");
                 return 0;
             }
         };

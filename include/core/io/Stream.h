@@ -12,7 +12,6 @@ namespace core { namespace io {
     public:
         virtual bool canRead() const { return false; }
         virtual bool canWrite() const { return false; }
-        virtual bool canTimeout() const { return false; }
         virtual int32_t getLength() const { return 0; }
         virtual int32_t getPosition() const { return 0; }
         virtual void close() {  }

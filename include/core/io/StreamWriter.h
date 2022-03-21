@@ -16,9 +16,9 @@ namespace core { namespace io {
 
             }
 
-            void printf(const char *format, ...) final {
-
-            };
+            virtual void write(const char* str) override {
+                this->TextWriter::write(str);
+            }
 
             void write(const unsigned char c) final {
                 _stream.writeByte(c);

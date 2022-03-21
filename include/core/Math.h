@@ -6,8 +6,8 @@
 #define SGLOGGER_MATH_H
 #include <stdint.h>
 #include <math.h>
-// Function definitions are guarded to avoid clashes with their Arduino counterparts if the Arduino lib is used.
 
+// Function definitions are guarded to avoid clashes with their Arduino counterparts if the Arduino lib is used.
 #ifndef min
         template<typename T>
         T min(T val0, T val1) {

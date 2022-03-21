@@ -10,8 +10,6 @@
 #include "etl/delegate.h"
 #include "core/events/Observable.h"
 #include "core/can/CanInterface.h"
-#include "core/reference_cast.h"
-
 
 namespace core { namespace can {
     enum IsoTpHeaderType {
@@ -165,7 +163,7 @@ namespace core { namespace can {
             }
 
         void onDataReceived(CanFrame canFrame) {
-            IsoTpFrame& f = reference_cast<CanFrame, IsoTpFrame>(canFrame);
+            IsoTpFrame& f = reinterpret_cast<IsoTpFrame&>(canFrame);
             bool isMessageStart = f.getHeaderType() == ISOTP_SINGLE || f.getHeaderType() == ISOTP_FIRST;
             bool isMultiPartMessage = f.getHeaderType() == ISOTP_FIRST || f.getHeaderType() == ISOTP_CONSECUTIVE;
             bool isContinuation = f.getHeaderType() == ISOTP_CONSECUTIVE;

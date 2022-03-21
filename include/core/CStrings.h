@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <string.h>
 namespace core { namespace cstrings {
-
     inline uint8_t split(char* str, const char spliterator, char** dest, uint8_t limit) {
         if (limit == 0)
             return 0;

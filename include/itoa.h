@@ -16,6 +16,8 @@
 #include <math.h>
 
 namespace {
+
+#ifdef CORE_BUILDIN_LTOA
     inline void reverse(char *begin, char *end) {
         char *is = begin;
         char *ie = end - 1;
@@ -73,6 +75,17 @@ namespace {
         *out = 0;
         return result;
     }
+#endif
+
+#ifdef CORE_BUILDIN_ITOA
+    inline char* itoa(int value, char *string, int radix) {
+        return ltoa(value, string, radix);
+    }
+
+    inline char* utoa(unsigned long value, char *string, int radix) {
+        return ultoa(value, string, radix);
+    }
+#endif
 
     inline char *dtostrf(double number, signed int width, unsigned int prec, char *s) {
         bool negative = false;
@@ -146,16 +159,6 @@ namespace {
         *out = 0;
         return s;
     }
-
-#ifdef CORE_BUILDIN_ITOA
-    inline char* itoa(int value, char *string, int radix) {
-        return ltoa(value, string, radix);
-    }
-
-    inline char* utoa(unsigned long value, char *string, int radix) {
-        return ultoa(value, string, radix);
-    }
-#endif
 }
 #endif //__AVR__
 #endif //FIRMWARE_ITOA_H

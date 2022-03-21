@@ -1,60 +1,53 @@
 //
-// Created by tyll on 2022-01-26.
+// Created by tyll on 2022-03-17.
 //
 
 #ifndef SGLOGGER_FILESYSTEM_H
 #define SGLOGGER_FILESYSTEM_H
 
 #include "Stream.h"
-#include "DirectoryInfo.h"
-#include "core/io/TextWriter.h"
 #include "core/shared_ptr.h"
+#include "FileSystemInfo.h"
+#include "FileSystem.h"
 
 namespace core { namespace io {
-    // Base class for file systems
-    class FileSystemInfo {
-    public:
-        const char* getName() const {
-            return _name;
-        }
+    enum FileSystemEnumerationOptions {
+        FILES = 1,
+        DIRECTORIES = 2
+    };
 
-        virtual bool exists() = 0;
-        virtual uint8_t getFullName(char * destStr, uint8_t limit) {
+    enum FileMode {
+        READ,
+        WRITE,
+        APPEND,
+        READ_UPDATE,
+        WRITE_UPDATE,
+        APPEND_UPDATE
+    };
+
+    constexpr uint16_t FS_TAKEALL = UINT16_MAX;
+
+    inline FileSystemEnumerationOptions operator| (FileSystemEnumerationOptions a, FileSystemEnumerationOptions b) {
+        return static_cast<FileSystemEnumerationOptions>(static_cast<int>(a) | static_cast<int>(b));
+    };
+
+    class FileSystemInfo; // partial definition needed here to resolve circular dependency.
+
+    class FileSystem {
+    public:
+        virtual core::shared_ptr<Stream> open(const char* path, FileMode mode) {
+            return {};
+        };
+        virtual bool exists(const char* path) {
+            return false;
+        };
+        virtual uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = FS_TAKEALL, FileSystemEnumerationOptions options =
+        FILES | DIRECTORIES) {
             return 0;
-        }
-
-    private:
-        const char* _name;
+        };
     };
 
-    class DirectoryInfo {
-        shared_ptr<DirectoryInfo> getDirectory() {
-            return _directory;
-        }
-
-        shared_ptr<DirectoryInfo> createSubDirectory() {
-
-        }
-
-    private:
-        shared_ptr<DirectoryInfo> _directory;
-    };
-
-    class FileInfo : public FileSystemInfo {
-    public:
-        shared_ptr<DirectoryInfo> getDirectory() {
-            return _directory;
-        }
-
-        virtual uint64_t getLength() = 0;
-
-        virtual core::io::Stream create() = 0;
-        virtual core::io::Stream open() = 0;
-
-    private:
-        shared_ptr<DirectoryInfo> _directory;
-    };
-
-
+    static FileSystem NullFileSystem;
 }}
-#endif //SGLOGGER_FILESYSTEM_H
+
+#endif //SGLOGGER_FILESYSTEMIMPL_H

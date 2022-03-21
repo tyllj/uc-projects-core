@@ -29,7 +29,10 @@ namespace core { namespace io {
             write(str);
             write(newLine());
         };
-        virtual void printf(const char *format, ...) = 0;
+
+        virtual void writeLine() {
+            write(newLine());
+        };
         virtual void flush() {};
 
     protected:
@@ -39,8 +42,6 @@ namespace core { namespace io {
 
     private:
         core::cstrings::NewLineMode _newLineMode = core::cstrings::POSIX;
-
-
     };
 }};
 

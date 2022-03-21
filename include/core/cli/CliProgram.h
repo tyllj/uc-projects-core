@@ -9,7 +9,7 @@
 #include "etl/delegate.h"
 #include "core/io/TextReader.h"
 #include "core/io/TextWriter.h"
-#include "core/io/DirectoryInfo.h"
+#include "core/io/FileSystemInfo.h"
 #include "core/shared_ptr.h"
 
 namespace core { namespace cli {

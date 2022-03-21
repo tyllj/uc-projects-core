@@ -9,7 +9,7 @@
 #include "core/cli/AnsiCharacters.h"
 #include "core/io/TextReader.h"
 #include "core/io/TextWriter.h"
-#include "core/threading/Sleep.h"
+#include "core/Sleep.h"
 
 namespace core { namespace cli {
     template <size_t bufferLength>
@@ -236,7 +236,7 @@ namespace core { namespace cli {
         }
 
         void discardLineBuffer() {
-            for (int32_t i = 0; i < _lineEnd && _lineBuffer[i] != NUL; i++) {
+            for (int32_t i = 0; i < _lineEnd; i++) {
                 _lineBuffer[i] = NUL;
             }
             _lineEnd = 0;

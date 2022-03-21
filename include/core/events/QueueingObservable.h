@@ -8,7 +8,7 @@
 #include "etl/mutex.h"
 #include "etl/queue.h"
 #include "core/events/Observable.h"
-#include "core/threading/LockGuard.h"
+#include "core/LockGuard.h"
 
 namespace core { namespace events {
         template <typename TData, size_t QueueSize>

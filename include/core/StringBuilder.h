@@ -30,6 +30,17 @@ namespace core {
             }
             _buffer[_position] = '\0';
         }
+
+        void append(const char* str, uint32_t count) {
+            size_t i = 0;
+            while (_position < _length && _position < count && str[i] != '\0') {
+                _buffer[_position] = str[i];
+                i++;
+                _position++;
+            }
+            _buffer[_position] = '\0';
+        }
+
         void append(char c) {
             if (_position >= _length)
                 return;
@@ -169,7 +180,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            utoa((int16_t)value, ptr(), 10);
+            ultoa((int16_t)value, ptr(), 10);
             seek(intWidth);
         }
         void append(uint16_t value) {
@@ -177,7 +188,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            utoa(value, ptr(), 10);
+            ultoa(value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(uint16_t value) {
@@ -205,7 +216,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            utoa((uint16_t)value, ptr(), 10);
+            ultoa((uint16_t)value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(uint8_t value) {

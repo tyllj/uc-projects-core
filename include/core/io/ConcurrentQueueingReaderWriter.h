@@ -9,7 +9,7 @@
 #include "TextReader.h"
 #include "TextWriter.h"
 #include "QueueStream.h"
-#include "core/threading/LockGuard.h"
+#include "core/LockGuard.h"
 #include "etl/mutex.h"
 
 namespace core { namespace io {
@@ -21,12 +21,12 @@ namespace core { namespace io {
         };
 
         void write(const unsigned char c) final {
-            threading::LockGuard _(_mtx);
+            LockGuard _(_mtx);
             _queue.writeByte(c);
         }
 
         int32_t read() final {
-            threading::LockGuard _(_mtx);
+            LockGuard _(_mtx);
             return _queue.readByte();
         }
     private:
