@@ -2,8 +2,8 @@
 // Created by tyll on 2022-02-04.
 //
 
-#ifndef SGLOGGER_OBDTRANSCEIVER_H
-#define SGLOGGER_OBDTRANSCEIVER_H
+#ifndef UC_CORE_OBDTRANSCEIVER_H
+#define UC_CORE_OBDTRANSCEIVER_H
 
 #include "core/Math.h"
 #include "core/async/Eventual.h"
@@ -15,9 +15,9 @@ namespace core { namespace can {
     class ObdTransceiver {
     public:
         explicit ObdTransceiver(CanInterface& canInterface) :
+            _pendingResponse(nullptr),
             _canInterface(canInterface),
-            _responseSocket(canInterface, 0x7DF),
-            _pendingResponse(nullptr) {
+            _responseSocket(canInterface, 0x7DF) {
             _packetReceivedCallback.set<ObdTransceiver, &ObdTransceiver::onResponseReceived>(*this);
         }
 
@@ -94,4 +94,4 @@ namespace core { namespace can {
     };
 }}
 
-#endif //SGLOGGER_OBDTRANSCEIVER_H
+#endif //UC_CORE_OBDTRANSCEIVER_H

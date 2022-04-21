@@ -2,8 +2,8 @@
 // Created by tyll on 2022-03-19.
 //
 
-#ifndef SGLOGGER_FILESYSTEMIMPL_H
-#define SGLOGGER_FILESYSTEMIMPL_H
+#ifndef UC_CORE_FILESYSTEMIMPL_H
+#define UC_CORE_FILESYSTEMIMPL_H
 
 
 #include <sys/types.h>
@@ -123,4 +123,4 @@ namespace core { namespace io {
     };
 }}
 
-#endif //SGLOGGER_FILESYSTEMIMPL_H
+#endif //UC_CORE_FILESYSTEMIMPL_H

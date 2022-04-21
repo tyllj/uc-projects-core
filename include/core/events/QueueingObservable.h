@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-28.
 //
 
-#ifndef SGLOGGER_QUEUEINGOBSERVABLE_H
-#define SGLOGGER_QUEUEINGOBSERVABLE_H
+#ifndef UC_CORE_QUEUEINGOBSERVABLE_H
+#define UC_CORE_QUEUEINGOBSERVABLE_H
 
 #include "etl/mutex.h"
 #include "etl/queue.h"
@@ -54,4 +54,4 @@ namespace core { namespace events {
         };
     }}
 
-#endif //SGLOGGER_QUEUEINGOBSERVABLE_H
+#endif //UC_CORE_QUEUEINGOBSERVABLE_H

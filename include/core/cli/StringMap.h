@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-26.
 //
 
-#ifndef SGLOGGER_STRINGMAP_H
-#define SGLOGGER_STRINGMAP_H
+#ifndef UC_CORE_STRINGMAP_H
+#define UC_CORE_STRINGMAP_H
 #include <stdint.h>
 #include <string.h>
 #include "core/CStrings.h"
@@ -21,8 +21,12 @@ namespace core { namespace cli {
             while (*currentRef != nullptr && !cstrings::equals((*currentRef)->_key, key))
                 currentRef = &((*currentRef)->_next);
 
-            entry = new _StringMapEntry { ._key = key, ._value = value, ._next =  (*currentRef) ? (*currentRef)->_next : nullptr};
-            (*currentRef) = entry;
+            entry = new _StringMapEntry();
+            entry->_key = key;
+            entry->_value = value;
+            entry->_next = (*currentRef) ? (*currentRef)->_next : nullptr;
+
+            *currentRef = entry;
         }
 
         TValue& getOrDefault(const char* key, TValue& fallbackValue) const {
@@ -79,4 +83,4 @@ namespace core { namespace cli {
 
     };
 }}
-#endif //SGLOGGER_STRINGMAP_H
+#endif //UC_CORE_STRINGMAP_H

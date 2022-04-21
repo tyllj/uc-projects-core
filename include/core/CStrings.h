@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-26.
 //
 
-#ifndef SGLOGGER_CSTRINGS_H
-#define SGLOGGER_CSTRINGS_H
+#ifndef UC_CORE_CSTRINGS_H
+#define UC_CORE_CSTRINGS_H
 
 #include <stdint.h>
 #include <string.h>
@@ -61,4 +61,4 @@ namespace core { namespace cstrings {
         }
     }
 }}
-#endif //SGLOGGER_CSTRINGS_H
+#endif //UC_CORE_CSTRINGS_H

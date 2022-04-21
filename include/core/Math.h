@@ -2,8 +2,8 @@
 // Created by tyll on 07.02.22.
 //
 
-#ifndef SGLOGGER_MATH_H
-#define SGLOGGER_MATH_H
+#ifndef UC_CORE_MATH_H
+#define UC_CORE_MATH_H
 #include <stdint.h>
 #include <math.h>
 
@@ -38,4 +38,4 @@
             return ((val) > 0 ? (val) : -(val));
         }
 #endif
-#endif //SGLOGGER_MATH_H
+#endif //UC_CORE_MATH_H

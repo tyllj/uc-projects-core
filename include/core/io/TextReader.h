@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-20.
 //
 
-#ifndef SGLOGGER_TEXTREADER_H
-#define SGLOGGER_TEXTREADER_H
+#ifndef UC_CORE_TEXTREADER_H
+#define UC_CORE_TEXTREADER_H
 
 #include <stdint.h>
 namespace core { namespace io {
@@ -42,4 +42,4 @@ namespace core { namespace io {
         };
     }};
 
-#endif //SGLOGGER_TEXTREADER_H
+#endif //UC_CORE_TEXTREADER_H

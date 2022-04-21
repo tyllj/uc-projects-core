@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-21.
 //
 
-#ifndef SGLOGGER_LOCKGUARD_H
-#define SGLOGGER_LOCKGUARD_H
+#ifndef UC_CORE_LOCKGUARD_H
+#define UC_CORE_LOCKGUARD_H
 
 #include "etl/mutex.h"
 #include "core/Bits.h"
@@ -27,4 +27,4 @@ namespace core {
 }
 #endif
 
-#endif //SGLOGGER_LOCKGUARD_H
+#endif //UC_CORE_LOCKGUARD_H

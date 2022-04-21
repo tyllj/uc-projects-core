@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-27.
 //
 
-#ifndef SGLOGGER_EVENT_H
-#define SGLOGGER_EVENT_H
+#ifndef UC_CORE_EVENT_H
+#define UC_CORE_EVENT_H
 
 #include <stddef.h>
 #include "etl/delegate.h"
@@ -75,4 +75,4 @@ namespace core {
     };
 }
 
-#endif //SGLOGGER_EVENT_H
+#endif //UC_CORE_EVENT_H

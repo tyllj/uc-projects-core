@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-22.
 //
 
-#ifndef SGLOGGER_LINEEDITOR_H
-#define SGLOGGER_LINEEDITOR_H
+#ifndef UC_CORE_LINEEDITOR_H
+#define UC_CORE_LINEEDITOR_H
 
 #include <stdio.h>
 #include "core/cli/AnsiCharacters.h"
@@ -24,22 +24,40 @@ namespace core { namespace cli {
         char* readLine() {
             discardLineBuffer();
 
-            int32_t c;
             do {
-                c = _input.read();
-                if (c > -1) {
-                    if (_isEscape)
-                        handleEscape((uint8_t) c);
-                    else
-                        handleChar((uint8_t) c);
-                } else {
-                    sleepms(20);
-                }
+                acceptInternal<20>();
             } while (!_isReturn);
+            return getBuffer();
+        }
+
+        bool accept() {
+            return acceptInternal<0>();
+        }
+
+        char * getBuffer() {
             return reinterpret_cast<char*>(_lineBuffer);
         }
 
+        void clear() {
+            discardLineBuffer();
+        }
+
     private:
+        template<long delay>
+        bool acceptInternal() {
+            int32_t c = _input.read();
+            if (c > -1) {
+                if (_isEscape)
+                    handleEscape((uint8_t) c);
+                else
+                    handleChar((uint8_t) c);
+            }
+            else if (delay != 0) {
+                sleepms(delay);
+            }
+            return _isReturn;
+        }
+
         void handleEscape(const uint8_t c) {
             if(_isControlSequence) {
                 handleControlSequence(c);
@@ -256,4 +274,4 @@ namespace core { namespace cli {
     };
 }}
 
-#endif //SGLOGGER_LINEEDITOR_H
+#endif //UC_CORE_LINEEDITOR_H

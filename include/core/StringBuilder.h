@@ -2,9 +2,10 @@
 // Created by tyll on 11.02.22.
 //
 
-#ifndef FIRMWARE_STRINGBUILDER_H
-#define FIRMWARE_STRINGBUILDER_H
+#ifndef UC_CORE_STRINGBUILDER_H
+#define UC_CORE_STRINGBUILDER_H
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -300,13 +301,13 @@ namespace core {
                 return decimalLength((int16_t) value);
             if (value < 0) {
                 uint8_t length = 0;
-                for (uint32_t i = 1; i <= value; i *= 10) {
+                for (int32_t i = 1; i <= value; i *= 10) {
                     length++;
                 }
                 return length;
             } else {
                 uint8_t length = 1;
-                for (uint32_t i = -1; i >= value; i *= 10) {
+                for (int32_t i = -1; i >= value; i *= 10) {
                     length++;
                 }
                 return length;
@@ -350,8 +351,8 @@ namespace core {
             str[places] = '\0';
         }
         char* _buffer;
-        size_t _position;
         size_t _length;
+        size_t _position;
     };
 }
 

@@ -87,7 +87,7 @@ namespace {
     }
 #endif
 
-    inline char *dtostrf(double number, signed int width, unsigned int prec, char *s) {
+    inline char *dtostrf(double number, int16_t width, uint16_t prec, char *s) {
         bool negative = false;
 
         if (isnan(number)) {
@@ -101,7 +101,7 @@ namespace {
 
         char *out = s;
 
-        int fillme = width; // how many cells to fill for the integer part
+        int16_t fillme = width; // how many cells to fill for the integer part
         if (prec > 0) {
             fillme -= (prec + 1);
         }
@@ -124,7 +124,7 @@ namespace {
 
         // Figure out how big our number really is
         double tenpow = 1.0;
-        int digitcount = 1;
+        uint16_t digitcount = 1;
         while (number >= 10.0 * tenpow) {
             tenpow *= 10.0;
             digitcount++;

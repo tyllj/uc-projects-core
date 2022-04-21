@@ -4,8 +4,8 @@
 
 #include <stdint.h>
 
-#ifndef SGLOGGER_BITS_H
-#define SGLOGGER_BITS_H
+#ifndef UC_CORE_BITS_H
+#define UC_CORE_BITS_H
 
 // Function definitions are guarded to avoid clashes with their Arduino counterparts if the Arduino lib is used.
 
@@ -43,4 +43,4 @@ inline uint8_t highByte(uint16_t word) {
 #define bit(b) (1UL << (b))
 #endif
 
-#endif //SGLOGGER_BITS_H
+#endif //UC_CORE_BITS_H

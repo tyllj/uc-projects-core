@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-22.
 //
 
-#ifndef SGLOGGER_PC_SERIALPORT_H
-#define SGLOGGER_PC_SERIALPORT_H
+#ifndef UC_CORE_PC_SERIALPORT_H
+#define UC_CORE_PC_SERIALPORT_H
 
 #include <stdint.h>
 #include "core/io/Stream.h"
@@ -61,4 +61,4 @@ namespace core { namespace io { namespace ports {
         int _baudRate = 9600;
     };
 }}}
-#endif //SGLOGGER_SERIALPORT_H
+#endif //UC_CORE_SERIALPORT_H

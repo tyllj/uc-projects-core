@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-22.
 //
 
-#ifndef SGLOGGER_STREAMREADER_H
-#define SGLOGGER_STREAMREADER_H
+#ifndef UC_CORE_STREAMREADER_H
+#define UC_CORE_STREAMREADER_H
 
 #include "TextReader.h"
 
@@ -23,4 +23,4 @@ namespace core { namespace io {
             StreamImpl& _stream;
         };
     }};
-#endif //SGLOGGER_STREAMREADER_H
+#endif //UC_CORE_STREAMREADER_H

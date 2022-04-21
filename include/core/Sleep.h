@@ -2,16 +2,14 @@
 // Created by tyll on 2022-01-27.
 //
 
-#ifndef SGLOGGER_SLEEP_H
-#define SGLOGGER_SLEEP_H
+#ifndef UC_CORE_SLEEP_H
+#define UC_CORE_SLEEP_H
 
 #ifdef __AVR__
-#include <avr/delay.h>
-inline void sleepms(long delay) { _delay_ms(delay); }
+#include "core/platform/avr/Sleep.h"
 #else
-#include <unistd.h>
-inline void sleepms(long delay) { usleep(delay * 1000); }
+#include "core/platform/pc/Sleep.h"
 #endif
 
 
-#endif //SGLOGGER_SLEEP_H
+#endif //UC_CORE_SLEEP_H

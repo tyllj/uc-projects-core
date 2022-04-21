@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-21.
 //
 
-#ifndef SGLOGGER_STREAMWRITER_H
-#define SGLOGGER_STREAMWRITER_H
+#ifndef UC_CORE_STREAMWRITER_H
+#define UC_CORE_STREAMWRITER_H
 
 #include "TextWriter.h"
 #include "Stream.h"
@@ -16,7 +16,7 @@ namespace core { namespace io {
 
             }
 
-            virtual void write(const char* str) override {
+            void write(const char* str) final {
                 this->TextWriter::write(str);
             }
 
@@ -28,4 +28,4 @@ namespace core { namespace io {
             StreamImpl& _stream;
         };
     }};
-#endif //SGLOGGER_STREAMWRITER_H
+#endif //UC_CORE_STREAMWRITER_H

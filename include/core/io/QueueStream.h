@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-21.
 //
 
-#ifndef SGLOGGER_QUEUESTREAM_H
-#define SGLOGGER_QUEUESTREAM_H
+#ifndef UC_CORE_QUEUESTREAM_H
+#define UC_CORE_QUEUESTREAM_H
 
 #include "Stream.h"
 
@@ -34,4 +34,4 @@ namespace core { namespace io {
     };
 }}
 
-#endif //SGLOGGER_QUEUESTREAM_H
+#endif //UC_CORE_QUEUESTREAM_H

@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-27.
 //
 
-#ifndef SGLOGGER_TEMPLATEDMAP_H
-#define SGLOGGER_TEMPLATEDMAP_H
+#ifndef UC_CORE_TEMPLATEDMAP_H
+#define UC_CORE_TEMPLATEDMAP_H
 
 #include <stdint.h>
 
@@ -63,4 +63,4 @@ namespace core {namespace collections {namespace TemplatedMap {
         return n;
     }
 }}}
-#endif //SGLOGGER_TEMPLATEDMAP_H
+#endif //UC_CORE_TEMPLATEDMAP_H

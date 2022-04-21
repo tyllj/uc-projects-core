@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-20.
 //
 
-#ifndef SGLOGGER_CONSOLEWRITER_CPP
-#define SGLOGGER_CONSOLEWRITER_H
+#ifndef UC_CORE_CONSOLEWRITER_CPP
+#define UC_CORE_CONSOLEWRITER_H
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -12,18 +12,10 @@
 namespace core { namespace io {
         class ConsoleWriter : public TextWriter {
         public:
-            virtual void printf(const char *format, ...) {
-                va_list ap;
-
-                va_start(ap, format);
-                int result = vprintf(format, ap);
-                va_end(ap);
-            };
-
-            virtual void write(const unsigned char c) {
+            void write(const unsigned char c) final {
                 putchar(c);
             }
-            virtual void write(const char* bytes, uint32_t count) {
+            virtual void write(const char* bytes, uint32_t count) final {
                 for (uint32_t i = 0; i < count; i++)
                     if (putchar(bytes[i]) == EOF)
                         return;
@@ -32,4 +24,4 @@ namespace core { namespace io {
         };
     }};
 
-#endif //SGLOGGER_CONSOLEWRITER_CPP
+#endif //UC_CORE_CONSOLEWRITER_CPP

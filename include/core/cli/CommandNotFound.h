@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-26.
 //
 
-#ifndef SGLOGGER_COMMANDNOTFOUND_H
-#define SGLOGGER_COMMANDNOTFOUND_H
+#ifndef UC_CORE_COMMANDNOTFOUND_H
+#define UC_CORE_COMMANDNOTFOUND_H
 #include "core/cli/CliProgram.h"
 
 namespace core { namespace cli {
@@ -14,4 +14,4 @@ namespace core { namespace cli {
             }
         };
 }}
-#endif //SGLOGGER_COMMANDNOTFOUND_H
+#endif //UC_CORE_COMMANDNOTFOUND_H

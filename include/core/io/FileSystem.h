@@ -2,13 +2,12 @@
 // Created by tyll on 2022-03-17.
 //
 
-#ifndef SGLOGGER_FILESYSTEM_H
-#define SGLOGGER_FILESYSTEM_H
+#ifndef UC_CORE_FILESYSTEM_H
+#define UC_CORE_FILESYSTEM_H
 
-#include "Stream.h"
+#include "etl/delegate.h"
 #include "core/shared_ptr.h"
-#include "FileSystemInfo.h"
-#include "FileSystem.h"
+#include "Stream.h"
 
 namespace core { namespace io {
     enum FileSystemEnumerationOptions {
@@ -35,8 +34,8 @@ namespace core { namespace io {
 
     class FileSystem {
     public:
-        virtual core::shared_ptr<Stream> open(const char* path, FileMode mode) {
-            return {};
+        virtual core::shared_ptr<core::io::Stream> open(const char*, FileMode mode) {
+            return core::shared_ptr<core::io::Stream>();
         };
         virtual bool exists(const char* path) {
             return false;
@@ -50,4 +49,4 @@ namespace core { namespace io {
     static FileSystem NullFileSystem;
 }}
 
-#endif //SGLOGGER_FILESYSTEMIMPL_H
+#endif //UC_CORE_FILESYSTEMIMPL_H

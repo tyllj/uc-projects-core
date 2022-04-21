@@ -2,8 +2,8 @@
 // Created by tyll on 2022-03-20.
 //
 
-#ifndef SGLOGGER_CAT_H
-#define SGLOGGER_CAT_H
+#ifndef UC_CORE_CAT_H
+#define UC_CORE_CAT_H
 #include "core/cli/CliProgram.h"
 #include "core/io/StreamReader.h"
 #include "core/io/Path.h"
@@ -37,4 +37,4 @@ namespace core { namespace cli {
             }
         };
     }}
-#endif //SGLOGGER_CAT_H
+#endif //UC_CORE_CAT_H

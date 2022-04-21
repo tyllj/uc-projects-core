@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-22.
 //
 
-#ifndef SGLOGGER_ANSICHARACTERS_H
-#define SGLOGGER_ANSICHARACTERS_H
+#ifndef UC_CORE_ANSICHARACTERS_H
+#define UC_CORE_ANSICHARACTERS_H
 
 #include <stdint.h>
 
@@ -41,4 +41,4 @@ constexpr uint8_t GS  = (0x1D);
 constexpr uint8_t RS  = (0x1E);
 constexpr uint8_t US  = (0x1F);
 
-#endif //SGLOGGER_ANSICHARACTERS_H
+#endif //UC_CORE_ANSICHARACTERS_H

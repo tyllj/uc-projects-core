@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-26.
 //
 
-#ifndef SGLOGGER_FILESYSTEMINFO_H
-#define SGLOGGER_FILESYSTEMINFO_H
+#ifndef UC_CORE_FILESYSTEMINFO_H
+#define UC_CORE_FILESYSTEMINFO_H
 
 #include <string.h>
 #include "Stream.h"
@@ -23,15 +23,14 @@ namespace core { namespace io {
     // Base class for file system navigation
     class FileSystemInfo {
     public:
-
-        FileSystemInfo(FileSystem& fileSystem, const char* path, const FileSystemEntryType type) :
-            _fullName(new char[strlen(path)+1]),
+        FileSystemInfo(core::io::FileSystem& fileSystem, const char* path, const FileSystemEntryType type) :
             _fileSystem(&fileSystem),
+            _fullName(new char[strlen(path)+1]),
             _type(type) {
             strcpy(_fullName.get(), path);
         }
 
-        const FileSystemEntryType getType() const {
+        FileSystemEntryType getType() const {
             return _type;
         }
 
@@ -47,13 +46,13 @@ namespace core { namespace io {
         }
 
     protected:
-        FileSystem& getFileSystem() const {
+        core::io::FileSystem& getFileSystem() const {
             return *_fileSystem;
         }
 
     private:
-        FileSystem* _fileSystem;
-        shared_ptr<char[]> _fullName;
+        core::io::FileSystem* _fileSystem;
+        core::shared_ptr<char[]> _fullName;
         FileSystemEntryType _type;
 
         friend class DirectoryInfo;
@@ -62,7 +61,7 @@ namespace core { namespace io {
 
     class DirectoryInfo : public FileSystemInfo {
     public:
-        DirectoryInfo(FileSystem& fileSystem, const char* path) :
+        DirectoryInfo(core::io::FileSystem& fileSystem, const char* path) :
             FileSystemInfo(fileSystem, path, FS_FILE) {
         }
 
@@ -87,7 +86,7 @@ namespace core { namespace io {
 
     class FileInfo : public FileSystemInfo {
     public:
-        explicit FileInfo(FileSystem& fileSystem, const char* path) :
+        explicit FileInfo(core::io::FileSystem& fileSystem, const char* path) :
             FileSystemInfo(fileSystem, path, FS_FILE) {
         }
 
@@ -105,4 +104,4 @@ namespace core { namespace io {
         };
     };
 }}
-#endif //SGLOGGER_FILESYSTEMINFO_H
+#endif //UC_CORE_FILESYSTEMINFO_H

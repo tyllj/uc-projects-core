@@ -2,14 +2,15 @@
 // Created by tyll on 2022-01-21.
 //
 
-#ifndef SGLOGGER_STREAM_H
-#define SGLOGGER_STREAM_H
+#ifndef UC_CORE_STREAM_H
+#define UC_CORE_STREAM_H
 
 #include <stdint.h>
 
 namespace core { namespace io {
     class Stream {
     public:
+        virtual ~Stream() {}
         virtual bool canRead() const { return false; }
         virtual bool canWrite() const { return false; }
         virtual int32_t getLength() const { return 0; }
@@ -18,10 +19,10 @@ namespace core { namespace io {
         virtual void flush() {  }
         virtual int32_t readByte() { return -1; }
         virtual int32_t copyTo(Stream destination) {
-            uint8_t b;
+            int32_t b;
             int32_t count = 0;
             while ((b = readByte()) != -1) {
-                destination.writeByte(b);
+                destination.writeByte((uint8_t) b);
                 count++;
             }
             return count;
@@ -46,11 +47,11 @@ namespace core { namespace io {
             }
             return c;
         }
-        virtual void writeByte(uint8_t byte) {}
+        virtual void writeByte(uint8_t) {}
         virtual void write(uint8_t* buffer, int32_t offset, int32_t count) {
             for (int32_t i = 0; i < count; i++)
                 writeByte(buffer[offset + i]);
         }
     };
 }}
-#endif //SGLOGGER_STREAM_H
+#endif //UC_CORE_STREAM_H

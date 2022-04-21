@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-31.
 //
 
-#ifndef SGLOGGER_CANINTERFACE_H
-#define SGLOGGER_CANINTERFACE_H
+#ifndef UC_CORE_CANINTERFACE_H
+#define UC_CORE_CANINTERFACE_H
 
 #include <stdint.h>
 #include "core/events/Observable.h"
@@ -40,4 +40,4 @@ namespace core { namespace can {
     };
 }}
 
-#endif //SGLOGGER_CANINTERFACE_H
+#endif //UC_CORE_CANINTERFACE_H

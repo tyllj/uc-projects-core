@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-27.
 //
 
-#ifndef SGLOGGER_TEMPLATEDSTRINGMAP_H
-#define SGLOGGER_TEMPLATEDSTRINGMAP_H
+#ifndef UC_CORE_TEMPLATEDSTRINGMAP_H
+#define UC_CORE_TEMPLATEDSTRINGMAP_H
 
 #include <stdint.h>
 #include "core/CStrings.h"
@@ -69,4 +69,4 @@ namespace core {namespace collections {namespace TemplatedStringMap {
         return n;
     }
 }}}
-#endif //SGLOGGER_TEMPLATEDSTRINGMAP_H
+#endif //UC_CORE_TEMPLATEDSTRINGMAP_H

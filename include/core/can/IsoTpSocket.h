@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-31.
 //
 
-#ifndef SGLOGGER_ISOTPSOCKET_H
-#define SGLOGGER_ISOTPSOCKET_H
+#ifndef UC_CORE_ISOTPSOCKET_H
+#define UC_CORE_ISOTPSOCKET_H
 
 #include <stdint.h>
 #include <string.h>
@@ -138,6 +138,8 @@ namespace core { namespace can {
                         frame.payload[0] = 0x20 | (index & 0x0F);
                         copy(position, length, 7, &data[position], &frame.payload[1]);
                         break;
+                    default:
+                        break;
                 }
                 _canInterface.send(frame);
                 index++;
@@ -207,4 +209,4 @@ namespace core { namespace can {
 
     };
 }}
-#endif //SGLOGGER_ISOTPSOCKET_H
+#endif //UC_CORE_ISOTPSOCKET_H

@@ -2,8 +2,8 @@
 // Created by tyll on 2022-03-14.
 //
 
-#ifndef SGLOGGER_CHANNEL_H
-#define SGLOGGER_CHANNEL_H
+#ifndef UC_CORE_CHANNEL_H
+#define UC_CORE_CHANNEL_H
 
 #include <stdint.h>
 #include "etl/delegate.h"
@@ -92,4 +92,4 @@ namespace core { namespace can {
         etl::delegate<TMessage(void)>* _rtrService;
     };
 }}
-#endif //SGLOGGER_CHANNEL_H
+#endif //UC_CORE_CHANNEL_H

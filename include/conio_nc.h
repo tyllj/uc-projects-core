@@ -2,8 +2,8 @@
 // Created by tyll on 06.02.22.
 //
 
-#ifndef SGLOGGER_CONIO_H
-#define SGLOGGER_CONIO_H
+#ifndef UC_CORE_CONIO_H
+#define UC_CORE_CONIO_H
 // Copyright (C) 2005  by Piotr He³ka (piotr.helka@nd.e-wro.pl)
 // Linux C++ (not full) implementation of Borland's conio.h
 // v 1.01
@@ -425,4 +425,4 @@ void window(int xup, int yup, int xdown, int ydown)
     return;
 }
 
-#endif //SGLOGGER_CONIO_H
+#endif //UC_CORE_CONIO_H

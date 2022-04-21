@@ -10,8 +10,8 @@
 #include "core/Bits.h"
 #include "avr/interrupt.h"
 
-namespace core { namespace threading {
-    class Locker {
+namespace core {
+    class InterruptLocks {
     public:
         static void lock() {
             _iFlagBeforLock = bitRead(SREG, 7);
@@ -26,6 +26,6 @@ namespace core { namespace threading {
 
         static inline bool _iFlagBeforLock = false;
     };
-}}
+}
 #endif //__AVR__
 #endif //FIRMWARE_AVRLOCKER_H

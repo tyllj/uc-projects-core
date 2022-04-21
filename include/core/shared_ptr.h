@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-26.
 //
 
-#ifndef SGLOGGER_SHARED_PTR_H
-#define SGLOGGER_SHARED_PTR_H
+#ifndef UC_CORE_SHARED_PTR_H
+#define UC_CORE_SHARED_PTR_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -68,15 +68,15 @@ namespace core {
     template <class T>
     class shared_ptr {
     public:
-        constexpr shared_ptr() : _refCount(nullptr), _ptr(nullptr) {}
-        explicit shared_ptr(T* const ptr ) : _refCount(new _CORE_ATOMIC_IMPL(1)), _ptr(ptr) {}
+        constexpr shared_ptr() : _ptr(nullptr), _refCount(nullptr) {}
+        explicit shared_ptr(T* const ptr ) : _ptr(ptr), _refCount(new _CORE_ATOMIC_IMPL(1)) {}
 
-        shared_ptr(const shared_ptr<T>& ptr) : _refCount(ptr._refCount), _ptr(ptr._ptr) {
+        shared_ptr(const shared_ptr<T>& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             if (_refCount)
                 (*_refCount)++;
         }
 
-        shared_ptr(shared_ptr<T>&& ptr) noexcept : _refCount(ptr._refCount), _ptr(ptr._ptr) {
+        shared_ptr(shared_ptr<T>&& ptr) noexcept : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             ptr._refCount = nullptr;
             ptr._ptr = nullptr;
         }
@@ -146,16 +146,16 @@ namespace core {
     template <class T>
     class shared_ptr<T[]> {
     public:
-        constexpr shared_ptr() : _refCount(nullptr), _ptr(nullptr) {}
-        explicit shared_ptr(T* const ptr) : _refCount(new _CORE_ATOMIC_IMPL(1)), _ptr(ptr) {
+        constexpr shared_ptr() : _ptr(nullptr), _refCount(nullptr) {}
+        explicit shared_ptr(T* const ptr) : _ptr(ptr), _refCount(new _CORE_ATOMIC_IMPL(1)) {
         }
 
-        shared_ptr(const shared_ptr<T[]>& ptr) : _refCount(ptr._refCount), _ptr(ptr._ptr) {
+        shared_ptr(const shared_ptr<T[]>& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             if (_refCount)
                 (*_refCount)++;
         }
 
-        shared_ptr(shared_ptr<T[]>&& ptr) noexcept : _refCount(ptr._refCount), _ptr(ptr._ptr) {
+        shared_ptr(shared_ptr<T[]>&& ptr) noexcept : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             ptr._refCount = nullptr;
             ptr._ptr = nullptr;
         }
@@ -226,4 +226,4 @@ namespace core {
         _CORE_ATOMIC_IMPL* _refCount;
     };
 }
-#endif //SGLOGGER_SHARED_PTR_H
+#endif //UC_CORE_SHARED_PTR_H

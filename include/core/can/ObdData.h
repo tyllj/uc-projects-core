@@ -52,22 +52,22 @@ namespace core { namespace can {
             _length = 0;
         }
 
-        const bool containsPid(uint8_t pid) const {
+        bool containsPid(uint8_t pid) const {
             for (uint8_t i = 0; i < _length; i++)
                 if (_pids[i] == pid)
                     return true;
             return false;
         }
 
-        const uint8_t pidAt(uint8_t i) const {
+        uint8_t pidAt(uint8_t i) const {
             return _pids[i];
         }
 
-        const uint32_t valueAt(uint32_t i) const {
+        uint32_t valueAt(uint32_t i) const {
             return _values[i];
         }
 
-        const ObdValue valueOf(uint8_t pid) const {
+        ObdValue valueOf(uint8_t pid) const {
             for (uint8_t i = 0; i < _length; i++)
                 if (_pids[i] == pid)
                     return ObdValue(_values[i]);
@@ -75,14 +75,14 @@ namespace core { namespace can {
             return ObdValue(0);
         }
 
-        const uint8_t length() const {
+        uint8_t length() const {
             return _length;
         }
     };
 
     class MultiRequest {
     private:
-        PidRequest _pids[6] = {0};
+        PidRequest _pids[6] = {_emptyRequest};
         uint8_t _length = 0;
         uint8_t _dataLength = 0;
     public:
@@ -92,31 +92,34 @@ namespace core { namespace can {
             _dataLength += pidRequest.responseLength;
         }
 
-        const PidRequest &at(uint8_t index) const {
+        const PidRequest& at(uint8_t index) const {
             return _pids[index];
         }
 
-        const PidRequest &pid(uint8_t pid) const {
+        const PidRequest& pid(uint8_t pid) const {
             for (uint8_t i = 0; i < _length; i++)
                 if (_pids[i].pid == pid)
                     return _pids[i];
-            return *((PidRequest *) nullptr);
+            return _emptyRequest;
         }
 
-        const bool containsPid(uint8_t pid) const {
+        bool containsPid(uint8_t pid) const {
             for (uint8_t i = 0; i < _length; i++)
                 if (_pids[i].pid == pid)
                     return true;
             return false;
         }
 
-        const uint8_t length() const {
+        uint8_t length() const {
             return _length;
         }
 
-        const uint8_t dataLength() const {
+        uint8_t dataLength() const {
             return _dataLength;
         }
+
+    private:
+        static PidRequest _emptyRequest;
     };
 }}
 

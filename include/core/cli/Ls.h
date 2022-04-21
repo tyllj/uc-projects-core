@@ -2,8 +2,8 @@
 // Created by tyll on 2022-03-19.
 //
 
-#ifndef SGLOGGER_LS_H
-#define SGLOGGER_LS_H
+#ifndef UC_CORE_LS_H
+#define UC_CORE_LS_H
 #include "core/cli/CliProgram.h"
 
 namespace core { namespace cli {
@@ -16,4 +16,4 @@ namespace core { namespace cli {
             }
         };
     }}
-#endif //SGLOGGER_LS_H
+#endif //UC_CORE_LS_H

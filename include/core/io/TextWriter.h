@@ -2,8 +2,8 @@
 // Created by tyll on 2022-01-20.
 //
 
-#ifndef SGLOGGER_TEXTWRITER_H
-#define SGLOGGER_TEXTWRITER_H
+#ifndef UC_CORE_TEXTWRITER_H
+#define UC_CORE_TEXTWRITER_H
 
 #include "core/CStrings.h"
 
@@ -45,4 +45,4 @@ namespace core { namespace io {
     };
 }};
 
-#endif //SGLOGGER_TEXTWRITER_H
+#endif //UC_CORE_TEXTWRITER_H
