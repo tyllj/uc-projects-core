@@ -44,7 +44,11 @@ namespace core { namespace cstrings {
         return strcasecmp(str0, str1) == 0;
     }
 
-    constexpr const char* empty() {
+    inline size_t length(const char* str) {
+        return strlen(str);
+    }
+
+    inline const char* empty() {
         return "";
     }
 

@@ -8,16 +8,12 @@
 // Conversion functions which are not part of ISO-CPP. The AVR-libc implements these in avr assembly language.
 // For all other platforms pure C++ versions are provided here.
 
-#ifndef __AVR__ // Those functions are already defined in the AVR libc.
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
 
-namespace {
-
-#ifdef CORE_BUILDIN_LTOA
+namespace core {
     inline void reverse(char *begin, char *end) {
         char *is = begin;
         char *ie = end - 1;
@@ -29,7 +25,13 @@ namespace {
             --ie;
         }
     }
-
+#ifdef __AVR__
+    inline char *ltoa(long value, char *result, int base) { return ::ltoa(value, result, base); }
+    inline char *ultoa(unsigned long value, char *result, int base) { return ::ultoa(value, result, base); }
+    inline char* itoa(int value, char *string, int radix) { return ::itoa(value, string, radix); }
+    inline char* utoa(unsigned long value, char *string, int radix) { return ::utoa(value, string, radix); }
+    inline char *dtostrf(double number, int16_t width, uint16_t prec, char *s) { return ::dtostrf(number, width, prec, s); }
+#else
     inline char *ltoa(long value, char *result, int base) {
         if (base < 2 || base > 16) {
             *result = 0;
@@ -75,9 +77,7 @@ namespace {
         *out = 0;
         return result;
     }
-#endif
 
-#ifdef CORE_BUILDIN_ITOA
     inline char* itoa(int value, char *string, int radix) {
         return ltoa(value, string, radix);
     }
@@ -85,7 +85,6 @@ namespace {
     inline char* utoa(unsigned long value, char *string, int radix) {
         return ultoa(value, string, radix);
     }
-#endif
 
     inline char *dtostrf(double number, int16_t width, uint16_t prec, char *s) {
         bool negative = false;
@@ -159,6 +158,6 @@ namespace {
         *out = 0;
         return s;
     }
+#endif
 }
-#endif //__AVR__
 #endif //FIRMWARE_ITOA_H

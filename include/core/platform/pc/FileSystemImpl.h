@@ -36,7 +36,7 @@ namespace core { namespace io {
         }
         virtual bool canRead() const { return _file != NULL; }
         virtual bool canWrite() const { return _file != NULL; }
-        virtual int32_t getLength() const {
+        virtual size_t getLength() const {
             if (_file == NULL)
                 return 0;
             int32_t pos = getPosition();
@@ -45,7 +45,7 @@ namespace core { namespace io {
             fseek(_file, pos, SEEK_SET);
             return size;
         }
-        virtual int32_t getPosition() const { return ftell(_file); }
+        virtual size_t getPosition() const { return ftell(_file); }
         void writeByte(uint8_t byte) override {
             if (_file != NULL)
                 fputc(byte, _file);

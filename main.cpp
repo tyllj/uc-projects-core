@@ -21,16 +21,37 @@
 #include "core/io/FileSystem.h"
 #include "core/platform/pc/FileSystemImpl.h"
 #include "core/cli/Ush.h"
-
+#include "core/platform/pc/UsbCan.h"
+#include "core/async/Task.h"
 int main() {
-    //core::io::NativeFileSystem fs;
-    core::io::ports::SerialPort uart;
-    uart.setPortName("COM3");
-    uart.setBaudRate(9600);
-    uart.open();
+/*
+    uint8_t x = 0;
+    core::async::Task<uint8_t*, void*> testTask(&x, [](core::async::TaskContext<uint8_t*, void*>& context) {
+        uint8_t& x_local = *(context.getData());
+        printf("Counter is %i in testTask.\n", x_local);
+        x_local += 1;
+        if (x_local >= 8)
+            context.setResult(&x_local);
+    });
 
-    core::io::StreamReader ttyin(uart);
-    core::io::StreamWriter ttyout(uart);
+    testTask.continueWith([](etl::optional<void*> result) {
+        printf("Result is %i.", *reinterpret_cast<uint8_t*>(result.value()));
+    }).wait();
+*/
+
+    core::io::NativeFileSystem fs;
+    core::io::ports::SerialPort tty("COM3");
+    core::io::ports::SerialPort usb("COM8");
+    tty.setBaudRate(9600);
+    tty.open();
+
+    usb.setBaudRate(115200);
+    usb.open();
+
+    core::can::UsbCan can(usb);
+
+    core::io::StreamReader ttyin(tty);
+    core::io::StreamWriter ttyout(tty);
     ttyout.setNewLine(core::cstrings::MSDOS);
 
     core::shared_ptr<core::cli::StringMap<core::cli::ProgramFactory, 128>> programs(new core::cli::StringMap<core::cli::ProgramFactory, 128>());
@@ -38,14 +59,18 @@ int main() {
     programs->addOrUpdate("ls", []() { return core::shared_ptr<core::cli::CliProgram>(new core::cli::Ls()); });
     programs->addOrUpdate("cat", []() { return core::shared_ptr<core::cli::CliProgram>(new core::cli::Cat()); });
 
-    core::io::DirectoryInfo wd(core::io::NullFileSystem, "/Test");
+    core::io::DirectoryInfo wd(fs, "/Test");
     core::cli::Ush shell(*programs, ttyin, ttyout, wd);
     while (!shell.isExit()) {
         if (!shell.accept())
             sleepms(20);
+
+        can.receive();
     }
-//
-    uart.close();
+
+    usb.close();
+    tty.close();
+
     return 0;
 }
 

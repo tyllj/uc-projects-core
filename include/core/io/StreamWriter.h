@@ -7,17 +7,17 @@
 
 #include "TextWriter.h"
 #include "Stream.h"
+#include "core/CStrings.h"
 
 namespace core { namespace io {
-        template<typename StreamImpl>
         class StreamWriter : public TextWriter {
         public:
-            explicit StreamWriter(StreamImpl& stream) : _stream(stream) {
+            explicit StreamWriter(Stream& stream) : _stream(stream) {
 
             }
 
             void write(const char* str) final {
-                this->TextWriter::write(str);
+                _stream.write(reinterpret_cast<const uint8_t *>(str), 0, cstrings::length(str));
             }
 
             void write(const unsigned char c) final {
@@ -25,7 +25,7 @@ namespace core { namespace io {
             }
 
         private:
-            StreamImpl& _stream;
+            Stream& _stream;
         };
     }};
 #endif //UC_CORE_STREAMWRITER_H

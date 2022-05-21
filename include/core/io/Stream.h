@@ -13,8 +13,8 @@ namespace core { namespace io {
         virtual ~Stream() {}
         virtual bool canRead() const { return false; }
         virtual bool canWrite() const { return false; }
-        virtual int32_t getLength() const { return 0; }
-        virtual int32_t getPosition() const { return 0; }
+        virtual size_t getLength() const { return 0; }
+        virtual size_t getPosition() const { return 0; }
         virtual void close() {  }
         virtual void flush() {  }
         virtual int32_t readByte() { return -1; }
@@ -27,16 +27,18 @@ namespace core { namespace io {
             }
             return count;
         }
-        virtual int32_t read(uint8_t* buffer, int32_t offset, int32_t count) {
+
+        virtual size_t read(uint8_t* buffer, size_t offset, size_t count) {
             int32_t r = -1;
-            int32_t c = 0;
+            size_t c = 0;
             while (c != count && (r = readByte()) != -1) {
                 buffer[offset + c] = (uint8_t) r;
                 c++;
             }
             return c;
         }
-        virtual int32_t read(uint8_t* buffer, int32_t count) {
+
+        size_t read(uint8_t* buffer, int32_t count) {
             return read(buffer, 0, count);
         }
 
@@ -47,9 +49,9 @@ namespace core { namespace io {
             }
             return c;
         }
-        virtual void writeByte(uint8_t) {}
-        virtual void write(uint8_t* buffer, int32_t offset, int32_t count) {
-            for (int32_t i = 0; i < count; i++)
+        virtual void writeByte(const uint8_t) {}
+        virtual void write(const uint8_t* buffer, size_t offset, size_t count) {
+            for (size_t i = 0; i < count; i++)
                 writeByte(buffer[offset + i]);
         }
     };

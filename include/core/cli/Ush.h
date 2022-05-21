@@ -25,7 +25,6 @@ namespace core { namespace cli {
                 _lineEditor(input, output),
                 _commands(commands),
                 _needPrintPrompt(true)  {
-
         }
 
         bool accept() {

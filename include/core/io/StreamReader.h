@@ -8,10 +8,9 @@
 #include "TextReader.h"
 
 namespace core { namespace io {
-        template<typename StreamImpl>
         class StreamReader : public TextReader {
         public:
-            StreamReader(StreamImpl& stream) : _stream(stream) {
+            StreamReader(Stream& stream) : _stream(stream) {
 
             }
 
@@ -20,7 +19,7 @@ namespace core { namespace io {
             }
 
         private:
-            StreamImpl& _stream;
+            Stream& _stream;
         };
     }};
 #endif //UC_CORE_STREAMREADER_H

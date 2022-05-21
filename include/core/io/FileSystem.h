@@ -46,7 +46,7 @@ namespace core { namespace io {
         };
     };
 
-    static FileSystem NullFileSystem;
+    inline FileSystem NullFileSystem;
 }}
 
 #endif //UC_CORE_FILESYSTEMIMPL_H

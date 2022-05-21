@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "core/CStrings.h"
-#include "itoa.h"
+#include "core/itoa.h"
 
 namespace core {
     inline char _stringBuilderBuffer[255];
@@ -57,7 +57,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            dtostrf(value, width, decimalPlaces, &_buffer[_position]);
+            core::dtostrf(value, width, decimalPlaces, &_buffer[_position]);
             *(ptr() + _length) = '\0';
             _position += width;
         }
@@ -69,7 +69,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            ltoa(value, ptr(), 10);
+            core::ltoa(value, ptr(), 10);
             seek(intWidth);
         }
         void append(int32_t value) {
@@ -77,7 +77,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            ltoa(value, ptr(), 10);
+            core::ltoa(value, ptr(), 10);
             seek(intWidth);
         }
         void appendHex(int32_t value)  {
@@ -85,7 +85,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            ltoa(value, ptr(), 16);
+            core::ltoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
         }
@@ -97,7 +97,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            itoa(value, ptr(), 10);
+            core::itoa(value, ptr(), 10);
             seek(intWidth);
         }
         void append(int16_t value) {
@@ -105,7 +105,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            itoa(value, ptr(), 10);
+            core::itoa(value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(int16_t value) {
@@ -113,7 +113,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            ltoa(value, ptr(), 16);
+            core::ltoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
         }
@@ -125,7 +125,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            itoa((int16_t)value, ptr(), 10);
+            core::itoa((int16_t)value, ptr(), 10);
             seek(intWidth);
         }
         void append(int8_t value) {
@@ -133,7 +133,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            itoa((int16_t)value, ptr(), 10);
+            core::itoa((int16_t)value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(int8_t value) {
@@ -141,7 +141,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            itoa(value, ptr(), 16);
+            core::itoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
         }
@@ -153,7 +153,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            ultoa(value, ptr(), 10);
+            core::ultoa(value, ptr(), 10);
             seek(intWidth);
         }
         void append(uint32_t value) {
@@ -161,7 +161,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            ultoa(value, ptr(), 10);
+            core::ultoa(value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(uint32_t value) {
@@ -169,7 +169,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            ultoa(value, ptr(), 16);
+            core::ultoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
         }
@@ -181,7 +181,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            ultoa((int16_t)value, ptr(), 10);
+            core::ultoa((int16_t)value, ptr(), 10);
             seek(intWidth);
         }
         void append(uint16_t value) {
@@ -189,7 +189,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            ultoa(value, ptr(), 10);
+            core::ultoa(value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(uint16_t value) {
@@ -197,7 +197,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            ultoa(value, ptr(), 16);
+            core::ultoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
         }
@@ -209,7 +209,7 @@ namespace core {
             if (intWidth > width)
                 return;
             pad(width - intWidth);
-            itoa((uint16_t)value, ptr(), 10);
+            core::itoa((uint16_t)value, ptr(), 10);
             seek(intWidth);
         }
         void append(uint8_t value) {
@@ -217,7 +217,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return;
 
-            ultoa((uint16_t)value, ptr(), 10);
+            core::ultoa((uint16_t)value, ptr(), 10);
             seek(strlen(ptr()));
         }
         void appendHex(uint8_t value) {
@@ -225,7 +225,7 @@ namespace core {
             if (_position + width >= _length)
                 return;
 
-            ultoa((uint16_t)value, ptr(), 16);
+            core::ultoa((uint16_t)value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
         }
