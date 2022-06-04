@@ -37,7 +37,7 @@ namespace core { namespace io {
         virtual core::shared_ptr<core::io::Stream> open(const char*, FileMode mode) {
             return core::shared_ptr<core::io::Stream>();
         };
-        virtual bool exists(const char* path) {
+        virtual bool exists(const char* path) const {
             return false;
         };
         virtual uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = FS_TAKEALL, FileSystemEnumerationOptions options =

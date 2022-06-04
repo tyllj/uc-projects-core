@@ -123,7 +123,7 @@ namespace core { namespace cli {
         io::TextReader& _input;
         io::TextWriter& _output;
         io::DirectoryInfo _workingDirectory;
-        LineEditor<80> _lineEditor; //(_input, _output)
+        LineEditor<80> _lineEditor;
         ProgramFactory _commandNotFound = []() { return shared_ptr<core::cli::CliProgram>(new CommandNotFound()); };
         core::cli::StringMap<ProgramFactory, 128>& _commands;
         bool _needPrintPrompt;

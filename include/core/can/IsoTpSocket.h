@@ -108,11 +108,6 @@ namespace core { namespace can {
 
         explicit IsoTpSocket(CanInterface& canInterface, canid_t canId) : _canInterface(canInterface), _canId(canId) {
             canFrameReceived.set<IsoTpSocket, &IsoTpSocket::onDataReceived>(*this);
-            _canInterface.newData() += canFrameReceived;
-        }
-
-        ~IsoTpSocket() {
-            _canInterface.newData() -= canFrameReceived;
         }
 
         void send(uint8_t* data, uint16_t length) {
@@ -148,21 +143,21 @@ namespace core { namespace can {
         }
 
     private:
-            void copy(uint16_t& position, uint16_t& length, uint8_t bytes, uint8_t* src, uint8_t* dst) {
-                for (uint16_t i = 0; i < 6 && position < length; position++, i++) {
-                    dst[i] = src[i];
-                }
+        void copy(uint16_t& position, uint16_t& length, uint8_t bytes, uint8_t* src, uint8_t* dst) {
+            for (uint16_t i = 0; i < 6 && position < length; position++, i++) {
+                dst[i] = src[i];
             }
+        }
 
-            void setDefaultBytes(uint8_t* payload) {
-                for (uint8_t i = 0; i < 8; i++)
-                    payload[i] = 0xCC;
-            }
+        void setDefaultBytes(uint8_t* payload) {
+            for (uint8_t i = 0; i < 8; i++)
+                payload[i] = 0xCC;
+        }
 
-            void discardPacket() {
-                if (packet.notNull())
-                    packet = core::shared_ptr<IsoTpPacket>();
-            }
+        void discardPacket() {
+            if (packet.notNull())
+                packet = core::shared_ptr<IsoTpPacket>();
+        }
 
         void onDataReceived(CanFrame canFrame) {
             IsoTpFrame& f = reinterpret_cast<IsoTpFrame&>(canFrame);

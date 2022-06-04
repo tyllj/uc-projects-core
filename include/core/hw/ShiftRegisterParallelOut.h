@@ -18,7 +18,13 @@ namespace core { namespace hw {
     template<typename TOutputImpl>
     class ShiftRegisterParallelOut {
     public:
-        explicit ShiftRegisterParallelOut(TOutputImpl dataPin , TOutputImpl clockPin, TOutputImpl latchPin, uint8_t bitOrder);
+        ShiftRegisterParallelOut(TOutputImpl dataPin , TOutputImpl clockPin, TOutputImpl latchPin, uint8_t bitOrder) :
+            _dataPin(dataPin),
+            _clockPin(clockPin),
+            _latchPin(latchPin),
+            _bitOrder(bitOrder) {
+        }
+
         void shiftOut(uint8_t value) {
             uint8_t i;
 
@@ -39,10 +45,10 @@ namespace core { namespace hw {
             _latchPin.setHigh();
         }
     private:
-        const uint8_t _bitOrder;
         TOutputImpl _dataPin;
         TOutputImpl _clockPin;
         TOutputImpl _latchPin;
+        uint8_t _bitOrder;
     };
 }}
 #endif //UC_CORE_SHIFTREGISTERPARALLELOUT_H

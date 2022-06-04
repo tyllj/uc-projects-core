@@ -26,17 +26,17 @@ namespace core { namespace io {
             flush();
             close();
         }
-        virtual void close() {
+        void close() final {
             if (_file != NULL)
                 fclose(_file);
         }
-        virtual void flush() {
+        void flush() final {
             if (_file != NULL)
                 fflush(_file);
         }
-        virtual bool canRead() const { return _file != NULL; }
-        virtual bool canWrite() const { return _file != NULL; }
-        virtual size_t getLength() const {
+        bool canRead() const final { return _file != NULL; }
+        bool canWrite() const final { return _file != NULL; }
+        size_t getLength() const final {
             if (_file == NULL)
                 return 0;
             int32_t pos = getPosition();
@@ -45,18 +45,18 @@ namespace core { namespace io {
             fseek(_file, pos, SEEK_SET);
             return size;
         }
-        virtual size_t getPosition() const { return ftell(_file); }
-        void writeByte(uint8_t byte) override {
+        size_t getPosition() const final { return ftell(_file); }
+        void writeByte(uint8_t byte) final {
             if (_file != NULL)
                 fputc(byte, _file);
         }
-        virtual int32_t seek(int32_t offset) override {
+        int32_t seek(int32_t offset) final {
             if (_file == NULL)
                 return 0;
             return fseek(_file, offset, SEEK_CUR);
         }
 
-        int32_t readByte() override {
+        int32_t readByte() final {
             uint8_t byte;
             if (_file == NULL || ((uint8_t) EOF) == (byte = fgetc(_file)))
                 return -1;
@@ -82,16 +82,18 @@ namespace core { namespace io {
 
     class NativeFileSystem : public FileSystem {
     public:
-        virtual core::shared_ptr<Stream> open(const char* path, core::io::FileMode mode) override {
+        core::shared_ptr<Stream> open(const char* path, core::io::FileMode mode) final {
             return core::shared_ptr<Stream>(new NativeFileStream(path, mode));
         };
-        virtual bool exists(const char* path) override {
+
+        bool exists(const char* path) const final {
             if (access(path, F_OK) == 0)
                 return true;
             return false;
         };
-        virtual uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = FS_TAKEALL, FileSystemEnumerationOptions options =
-        FILES | DIRECTORIES) {
+
+        uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = FS_TAKEALL, FileSystemEnumerationOptions options =
+        FILES | DIRECTORIES) final {
             uint16_t i = 0;
             uint16_t j = 0;
             DIR *d;
@@ -103,7 +105,7 @@ namespace core { namespace io {
                     if (i >= skip) {
                         if (i - skip < take) {
                             j++;
-                            stat(fsentry->d_name,&filestat);
+                            stat(fsentry->d_name, &filestat);
                             FileSystemEntryType type;
                             type = S_ISDIR(filestat.st_mode) ? FS_DIRECTORY : FS_FILE;
 
@@ -115,6 +117,7 @@ namespace core { namespace io {
                         else
                             break;
                     }
+                    i++;
                 }
                 closedir(d);
             }

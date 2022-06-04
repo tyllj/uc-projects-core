@@ -22,23 +22,50 @@
 #include "core/platform/pc/FileSystemImpl.h"
 #include "core/cli/Ush.h"
 #include "core/platform/pc/UsbCan.h"
-#include "core/async/Task.h"
+#include "core/async/Future.h"
+#include "core/unique_ptr.h"
+#include "core/async/MainLoopDispatcher.h"
+
+core::unique_ptr<char[]> getY() {
+    return core::unique_ptr<char[]>(new char[] {"Hallo Welt"});
+}
+
 int main() {
-/*
-    uint8_t x = 0;
-    core::async::Task<uint8_t*, void*> testTask(&x, [](core::async::TaskContext<uint8_t*, void*>& context) {
-        uint8_t& x_local = *(context.getData());
-        printf("Counter is %i in testTask.\n", x_local);
-        x_local += 1;
-        if (x_local >= 8)
-            context.setResult(&x_local);
+    core::async::MainLoopDispatcher<8> dispatcher;
+
+    core::io::ports::SerialPort usb("COM9");
+    usb.setBaudRate(115200);
+    usb.open();
+    core::can::UsbCan can(dispatcher, usb);
+    core::io::ConsoleReader reader;
+
+    etl::delegate<void(core::can::CanFrame)> onReceived([] (core::can::CanFrame frame) {
+        for (uint8_t i; i<frame.length; i++)
+            putch(frame.payload[i]);
+        putch('\n');
     });
+    can.newData() += onReceived;
+    bool quit(false);
+    while(!quit) {
+        dispatcher.dispatchOne();
+        sleepms(1);
 
-    testTask.continueWith([](etl::optional<void*> result) {
-        printf("Result is %i.", *reinterpret_cast<uint8_t*>(result.value()));
-    }).wait();
-*/
+        int32_t r;
+        if (-1 != (r=reader.read())) {
+            if (uint8_t(r) == 'q')
+                quit = true;
 
+            core::can::CanFrame f;
+            f.length=1;
+            f.id=100;
+            for (uint8_t i = 0; i < 8; i++) f.payload[i] = 0;
+            printf("Sending char: %c\n", uint8_t(r));
+            f.payload[0] = uint8_t(r);
+            can.send(f);
+        }
+    }
+
+/*
     core::io::NativeFileSystem fs;
     core::io::ports::SerialPort tty("COM3");
     core::io::ports::SerialPort usb("COM8");
@@ -72,6 +99,7 @@ int main() {
     tty.close();
 
     return 0;
+    */
 }
 
 #endif

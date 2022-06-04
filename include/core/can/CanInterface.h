@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 #include "core/events/Observable.h"
-#include "core/shared_ptr.h"
+#include "core/unique_ptr.h"
 
 typedef uint16_t canid_t;
 
@@ -36,7 +36,7 @@ namespace core { namespace can {
         virtual canid_t getFilterMask() = 0;
         virtual void setFilterMask(canid_t filter) = 0;
         virtual void send(CanFrame& canFrame) = 0;
-        virtual void send(shared_ptr<CanFrame> canFrame) = 0;
+        virtual ~CanInterface() = default;
     };
 }}
 

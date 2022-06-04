@@ -32,7 +32,7 @@ namespace core {
     inline char* utoa(unsigned long value, char *string, int radix) { return ::utoa(value, string, radix); }
     inline char *dtostrf(double number, int16_t width, uint16_t prec, char *s) { return ::dtostrf(number, width, prec, s); }
 #else
-    inline char *ltoa(long value, char *result, int base) {
+    inline char* ltoa(long value, char *result, int base) {
         if (base < 2 || base > 16) {
             *result = 0;
             return result;
@@ -57,7 +57,7 @@ namespace core {
         return result;
     }
 
-    inline char *ultoa(unsigned long value, char *result, int base) {
+    inline char* ultoa(unsigned long value, char *result, int base) {
         if (base < 2 || base > 16) {
             *result = 0;
             return result;

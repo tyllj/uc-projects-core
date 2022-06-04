@@ -8,7 +8,7 @@
 #include "core/io/Stream.h"
 #include "core/io/StreamReader.h"
 #include "core/io/StreamWriter.h"
-#include "core/async/Task.h"
+#include "core/async/Future.h"
 
 namespace core { namespace hw {
     enum GsmState {
@@ -61,8 +61,8 @@ namespace core { namespace hw {
             _commandOutput[_commandOutputPosition] = '\0';
         }
 
-        async::Task<SimcomGsm*, bool> sendAndAssert() {
-            return async::Task<SimcomGsm*, bool>(this, [](core::async::TaskContext<SimcomGsm*, bool>& ctx) {
+        async::Future<SimcomGsm*, bool> sendAndAssert() {
+            return async::Future<SimcomGsm*, bool>(this, [](core::async::FutureContext<SimcomGsm*, bool>& ctx) {
                 SimcomGsm& self = *(ctx.getData());
                 self.continueReceiveResponse();
             }); // TODO: continueWith( self -> self.finalizeReceivedResponse() ) ...

@@ -11,17 +11,17 @@
 
 #ifndef makeWord
 inline uint16_t makeWord(uint8_t h, uint8_t l) {
-    return ((int16_t) h << 8) | (int16_t) l;
+    return uint16_t (((uint16_t) h << 8) | (uint16_t) l);
 }
 #endif
 #ifndef lowByte
 inline uint8_t lowByte(uint16_t word) {
-    return ((uint8_t) ((word) & 0xff));
+    return uint8_t((word) & 0xff) ;
 }
 #endif
 #ifndef highByte
 inline uint8_t highByte(uint16_t word) {
-    return (uint8_t) ((word) >> 8);
+    return uint8_t((word) >> 8);
 }
 #endif
 #ifndef bitRead

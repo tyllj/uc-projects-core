@@ -6,7 +6,7 @@
 #define UC_CORE_OBDTRANSCEIVER_H
 
 #include "core/Math.h"
-#include "core/async/Eventual.h"
+#include "core/async/Promise.h"
 #include "core/can/CanInterface.h"
 #include "core/can/IsoTpSocket.h"
 #include "core/can/ObdData.h"
@@ -27,15 +27,15 @@ namespace core { namespace can {
         }
 
         // Caller provides memory for response. Object referenced by response must outlive the request cycle!
-        void requestAsync(MultiRequest& request, core::async::Eventual<MultiResponse>& response) {
+        void requestAsync(MultiRequest& request, core::async::Promise<MultiResponse>& response) {
             _request = request; // request PID list is copied into instance variable
             _pendingResponse = &response;
             _pendingResponse->reset();
             _responseSocket.newData() += _packetReceivedCallback;
         }
 
-        shared_ptr<core::async::Eventual<MultiResponse>> requestAsync(MultiRequest& request) {
-            shared_ptr<core::async::Eventual<MultiResponse>> response(new core::async::Eventual<MultiResponse>());
+        shared_ptr<core::async::Promise<MultiResponse>> requestAsync(MultiRequest& request) {
+            shared_ptr<core::async::Promise<MultiResponse>> response(new core::async::Promise<MultiResponse>());
             this->requestAsync(request, *response);
             return response;
         }
@@ -87,7 +87,7 @@ namespace core { namespace can {
 
     private:
         MultiRequest _request;
-        core::async::Eventual<MultiResponse>* _pendingResponse;
+        core::async::Promise<MultiResponse>* _pendingResponse;
         CanInterface& _canInterface;
         IsoTpSocket _responseSocket;
         etl::delegate<void(shared_ptr<core::can::IsoTpPacket>)> _packetReceivedCallback;

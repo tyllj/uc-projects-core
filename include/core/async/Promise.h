@@ -5,8 +5,10 @@
 #ifndef FIRMWARE_EVENTUAL_H
 #define FIRMWARE_EVENTUAL_H
 namespace core { namespace async {
+    // TODO: replace usages (ObdTransceiver) with Future.
+
     template<typename TData>
-    class Eventual {
+    class Promise {
     public:
         TData& get() {
             return _value;

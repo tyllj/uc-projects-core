@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <unistd.h>
+#include "core/async/Future.h"
 #include "core/io/Stream.h"
 #include "core/events/Observable.h"
 #include "core/shared_ptr.h"
@@ -44,15 +45,32 @@ namespace core { namespace can {
 
         class UsbCan : public events::Observable<CanFrame> {
         public:
-            UsbCan(core::io::Stream& serialPort, uint32_t baudRate = 500000) :
+            UsbCan(core::async::IDispatcher& dispatcher, core::io::Stream& serialPort, uint32_t baudRate = 500000) :
                 _serialPort(serialPort),
                 _filter(0x00),
                 _mask(0x00),
                 _speed(canusb_int_to_speed(baudRate)) {
                 init();
+                _dispose = new bool(false);
+                etl::delegate<void(core::async::FutureContext<UsbCan*, void*>& ctx)> receiveDelegate(
+                        [](core::async::FutureContext<UsbCan*, void*>& ctx) {
+                            UsbCan& self = *(ctx.getData());
+                            // TODO: pass pointer to flag in different manner
+                            if (*(self._dispose)) {
+                                delete self._dispose;
+                                FUTURE_RETURN(ctx, nullptr);
+                            }
+
+                            self.receive();
+                        });
+                core::shared_ptr<core::async::IFuture> receiveTask(new async::Future<UsbCan*, void*>(this, receiveDelegate));
+                dispatcher.run(receiveTask);
             }
 
-            ~UsbCan() {}
+
+            ~UsbCan() {
+                *_dispose = true;
+            }
 
             virtual canid_t getFilter() {
                 return _filter;
@@ -259,6 +277,7 @@ namespace core { namespace can {
             CanFrame _canFrame;
             uint8_t _serialFrame[32];
             uint8_t _serialFrameLength;
+            bool* _dispose;
 
         };
     }}

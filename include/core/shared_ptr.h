@@ -122,6 +122,8 @@ namespace core {
             return ((int8_t) *_refCount) == 1;
         }
 
+        explicit operator bool() const {return _ptr;}
+
         inline bool isNull() const {
             return _ptr == nullptr;
         }
@@ -225,5 +227,10 @@ namespace core {
         T* _ptr;
         _CORE_ATOMIC_IMPL* _refCount;
     };
+
+    template<typename T>
+    void swap(shared_ptr<T>& lhs, shared_ptr<T>& rhs) {
+        lhs.swap(rhs);
+    }
 }
 #endif //UC_CORE_SHARED_PTR_H
