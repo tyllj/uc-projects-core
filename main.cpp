@@ -33,13 +33,15 @@ core::unique_ptr<char[]> getY() {
 int main() {
     core::async::MainLoopDispatcher<8> dispatcher;
 
-    core::io::ports::SerialPort usb("COM9");
-    usb.setBaudRate(115200);
+    core::io::ports::SerialPort usb("COM11");
+    usb.setBaudRate(2000000);
     usb.open();
-    core::can::UsbCan can(dispatcher, usb);
+    core::can::UsbCan can(dispatcher, usb, 125000);
     core::io::ConsoleReader reader;
 
     etl::delegate<void(core::can::CanFrame)> onReceived([] (core::can::CanFrame frame) {
+
+        printf("id=%i dlc=%i: ", frame.id, frame.length);
         for (uint8_t i; i<frame.length; i++)
             putch(frame.payload[i]);
         putch('\n');
@@ -48,7 +50,7 @@ int main() {
     bool quit(false);
     while(!quit) {
         dispatcher.dispatchOne();
-        sleepms(1);
+        sleepms(5);
 
         int32_t r;
         if (-1 != (r=reader.read())) {
@@ -59,7 +61,7 @@ int main() {
             f.length=1;
             f.id=100;
             for (uint8_t i = 0; i < 8; i++) f.payload[i] = 0;
-            printf("Sending char: %c\n", uint8_t(r));
+            //printf("Sending char: %c\n", uint8_t(r));
             f.payload[0] = uint8_t(r);
             can.send(f);
         }

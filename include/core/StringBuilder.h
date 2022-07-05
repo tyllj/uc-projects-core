@@ -22,7 +22,7 @@ namespace core {
 
         operator const char*() const { return toString(); }
 
-        void append(const char* str) {
+        StringBuilder& append(const char* str) {
             size_t i = 0;
             while (_position < _length && str[i] != '\0') {
                 _buffer[_position] = str[i];
@@ -30,9 +30,10 @@ namespace core {
                 _position++;
             }
             _buffer[_position] = '\0';
+            return *this;
         }
 
-        void append(const char* str, uint32_t count) {
+        StringBuilder& append(const char* str, uint32_t count) {
             size_t i = 0;
             while (_position < _length && _position < count && str[i] != '\0') {
                 _buffer[_position] = str[i];
@@ -40,194 +41,213 @@ namespace core {
                 _position++;
             }
             _buffer[_position] = '\0';
+            return *this;
         }
 
-        void append(char c) {
+        StringBuilder& append(char c) {
             if (_position >= _length)
-                return;
+                return *this;
 
             *ptr() = c;
             seek(1);
+            return *this;
         }
 
-        void append(float value, int8_t width, uint8_t decimalPlaces)  {
+        StringBuilder& append(float value, int8_t width, uint8_t decimalPlaces)  {
             append((double) value, width, decimalPlaces);
         }
-        void append(double value, int8_t width, uint8_t decimalPlaces)  {
+        StringBuilder& append(double value, int8_t width, uint8_t decimalPlaces)  {
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::dtostrf(value, width, decimalPlaces, &_buffer[_position]);
             *(ptr() + _length) = '\0';
             _position += width;
+            return *this;
         }
 
-        void append(int32_t value, int8_t width) {
+        StringBuilder& append(int32_t value, int8_t width) {
             if (_position + width >= _length)
-                return;
+                return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
-                return;
+                return *this;
             pad(width - intWidth);
             core::ltoa(value, ptr(), 10);
             seek(intWidth);
         }
-        void append(int32_t value) {
+        StringBuilder& append(int32_t value) {
             uint8_t intWidth = decimalLength(value);
             if (_position + intWidth >= _length)
-                return;
+                return *this;
 
             core::ltoa(value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
-        void appendHex(int32_t value)  {
+        StringBuilder& appendHex(int32_t value)  {
             size_t width = 8;
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::ltoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
+            return *this;
         }
 
-        void append(int16_t value, int8_t width) {
+        StringBuilder& append(int16_t value, int8_t width) {
             if (_position + width >= _length)
-                return;
+                return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
-                return;
+                return *this;
             pad(width - intWidth);
             core::itoa(value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
-        void append(int16_t value) {
+        StringBuilder& append(int16_t value) {
             uint8_t intWidth = decimalLength(value);
             if (_position + intWidth >= _length)
-                return;
+                return *this;
 
             core::itoa(value, ptr(), 10);
             seek(strlen(ptr()));
+            return *this;
         }
-        void appendHex(int16_t value) {
+        StringBuilder& appendHex(int16_t value) {
             size_t width = 4;
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::ltoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
+            return *this;
         }
 
-        void append(int8_t value, int8_t width) {
+        StringBuilder& append(int8_t value, int8_t width) {
             if (_position + width >= _length)
-                return;
+                return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
-                return;
+                return *this;
             pad(width - intWidth);
             core::itoa((int16_t)value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
-        void append(int8_t value) {
+        StringBuilder& append(int8_t value) {
             uint8_t intWidth = decimalLength(value);
             if (_position + intWidth >= _length)
-                return;
+                return *this;
 
             core::itoa((int16_t)value, ptr(), 10);
             seek(strlen(ptr()));
+            return *this;
         }
-        void appendHex(int8_t value) {
+        StringBuilder& appendHex(int8_t value) {
             size_t width = 2;
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::itoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
+            return *this;
         }
 
-        void append(uint32_t value, int8_t width) {
+        StringBuilder& append(uint32_t value, int8_t width) {
             if (_position + width >= _length)
-                return;
+                return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
-                return;
+                return *this;
             pad(width - intWidth);
             core::ultoa(value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
-        void append(uint32_t value) {
+        StringBuilder& append(uint32_t value) {
             uint8_t intWidth = decimalLength(value);
             if (_position + intWidth >= _length)
-                return;
+                return *this;
 
             core::ultoa(value, ptr(), 10);
             seek(strlen(ptr()));
+            return *this;
         }
-        void appendHex(uint32_t value) {
+        StringBuilder& appendHex(uint32_t value) {
             size_t width = 8;
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::ultoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
+            return *this;
         }
 
-        void append(uint16_t value, int8_t width) {
+        StringBuilder& append(uint16_t value, int8_t width) {
             if (_position + width >= _length)
-                return;
+                return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
-                return;
+                return *this;
             pad(width - intWidth);
             core::ultoa((int16_t)value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
-        void append(uint16_t value) {
+        StringBuilder& append(uint16_t value) {
             uint8_t intWidth = decimalLength(value);
             if (_position + intWidth >= _length)
-                return;
+                return *this;
 
             core::ultoa(value, ptr(), 10);
             seek(strlen(ptr()));
+            return *this;
         }
-        void appendHex(uint16_t value) {
+        StringBuilder& appendHex(uint16_t value) {
             size_t width = 4;
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::ultoa(value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
+            return *this;
         }
 
-        void append(uint8_t value, int8_t width) {
+        StringBuilder& append(uint8_t value, int8_t width) {
             if (_position + width >= _length)
-                return;
+                return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
-                return;
+                return *this;
             pad(width - intWidth);
             core::itoa((uint16_t)value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
-        void append(uint8_t value) {
+        StringBuilder& append(uint8_t value) {
             uint8_t intWidth = decimalLength(value);
             if (_position + intWidth >= _length)
-                return;
+                return *this;
 
             core::ultoa((uint16_t)value, ptr(), 10);
             seek(strlen(ptr()));
         }
-        void appendHex(uint8_t value) {
+        StringBuilder& appendHex(uint8_t value) {
             size_t width = 2;
             if (_position + width >= _length)
-                return;
+                return *this;
 
             core::ultoa((uint16_t)value, ptr(), 16);
             rightAlign(ptr(), width);
             seek(strlen(ptr()));
+            return *this;
         }
 
         uint8_t decimalLength(uint8_t value) const {
