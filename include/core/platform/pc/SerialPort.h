@@ -20,15 +20,15 @@ namespace core { namespace io { namespace ports {
             SerialPort::close();
         }
 
-        void setBaudRate(int32_t baudRate) {
+        void baudRate(int32_t baudRate) {
             if (!_isOpen)
                 _baudRate = baudRate;
         }
 
         bool canRead() const final { return true; }
         bool canWrite() const final { return true; }
-        size_t getLength() const final { return 0; }
-        size_t getPosition() const final { return 0; }
+        size_t length() const final { return 0; }
+        size_t position() const final { return 0; }
 
         void open() {
             if (!_isOpen && RS232_OpenComport(_portNumber, _baudRate,"8N1", 0) == 0)
@@ -38,6 +38,7 @@ namespace core { namespace io { namespace ports {
         void close() final {
             if (_isOpen)
                 RS232_CloseComport(_portNumber);
+            _isOpen = false;
         }
 
         void flush() final {  }

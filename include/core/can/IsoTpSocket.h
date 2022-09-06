@@ -7,9 +7,12 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "etl/delegate.h"
-#include "core/events/Observable.h"
-#include "core/can/CanInterface.h"
+#include "etl/utility.h"
+#include "etl/queue_spsc_atomic.h"
+#include "core/unique_ptr.h"
+#include "core/can/ICanInterface.h"
+#include "core/shared_ptr.h"
+#include "core/async/Future.h"
 
 namespace core { namespace can {
     enum IsoTpHeaderType {
@@ -30,7 +33,7 @@ namespace core { namespace can {
     public:
         IsoTpFrame(CanFrame canData) : _canData(canData) {}
         IsoTpHeaderType getHeaderType() {
-            return (IsoTpHeaderType)((_canData.payload[0] >> 4) & 0x0F);
+            return static_cast<IsoTpHeaderType>((_canData.payload[0] >> 4) & 0x0F);
         }
         uint16_t getMessageLength() {
             switch (getHeaderType()) {
@@ -62,7 +65,7 @@ namespace core { namespace can {
         }
         IsoTpFlowControlType getFlowControlType() {
             if (getHeaderType() == ISOTP_FLOW_CONTROL)
-                return (IsoTpFlowControlType)(_canData.payload[0] & 0x0F);
+                return static_cast<IsoTpFlowControlType>(_canData.payload[0] & 0x0F);
             return ISOTP_NO_FC;
         }
         uint8_t getSeparationTimeMillis() {
@@ -74,12 +77,10 @@ namespace core { namespace can {
 
     class IsoTpPacket {
     public:
-        explicit IsoTpPacket(size_t length) : _length(length), _position(0) {
-            _data = new uint8_t[length];
-        }
+        IsoTpPacket() : _length(0), _position(0), _data(core::unique_ptr<uint8_t[]>()) {}
 
-        ~IsoTpPacket() {
-            delete[] _data;
+        explicit IsoTpPacket(size_t length) : _length(length), _position(0), _data(core::unique_ptr<uint8_t[]>(new uint8_t[length])) {
+
         }
 
         void appendFrame(IsoTpFrame& frame) {
@@ -89,25 +90,57 @@ namespace core { namespace can {
             }
         }
 
+        inline size_t length() { return _length; }
+
         inline uint8_t* getData() {
-            return _data;
+            return _data.get();
         }
 
         inline bool isFull() {
             return _position == _length;
         }
 
+
     private:
         size_t _length;
         size_t _position;
-        uint8_t* _data;
+        core::unique_ptr<uint8_t[]> _data;
     };
 
-    class IsoTpSocket : public events::Observable<shared_ptr<IsoTpPacket>>{
-    public:
+#ifndef UC_CORE_ISOTP_QUEUE_SIZE
+#define UC_CORE_ISOTP_QUEUE_SIZE 8
+#endif
 
-        explicit IsoTpSocket(CanInterface& canInterface, canid_t canId) : _canInterface(canInterface), _canId(canId) {
-            canFrameReceived.set<IsoTpSocket, &IsoTpSocket::onDataReceived>(*this);
+    class IsoTpSocket {
+    private:
+        struct BackgroundTaskContext {
+            IsoTpSocket* socket;
+            core::shared_ptr<bool> disposedFlag;
+        };
+    public:
+        explicit IsoTpSocket(core::async::IDispatcher& dispatcher, core::can::ICanInterface& canInterface, canid_t canId, size_t maxPayload = 128) :
+            _canInterface(canInterface),
+            _canId(canId),
+            _disposedFlag(core::shared_ptr<bool>(new bool{false})),
+            _maxPayload(maxPayload),
+            _bufferedPayload(0) {
+            startBackgroundWorker(dispatcher);
+        }
+
+        void startBackgroundWorker(async::IDispatcher &dispatcher) const {
+            etl::delegate<void(async::FutureContext<BackgroundTaskContext, void*>&)> backgroundTaskDelegate;
+            backgroundTaskDelegate.set([=](async::FutureContext<BackgroundTaskContext, void*> ctx) {
+                if (*(ctx.getData().disposedFlag))
+                    FUTURE_RETURN(ctx, nullptr);
+                ctx.getData().socket->backgroundReceive();
+            });
+
+            async::Future<BackgroundTaskContext, void*> backgroundTask({const_cast<IsoTpSocket*>(this), _disposedFlag}, backgroundTaskDelegate);
+            dispatcher.run(shared_ptr<async::IFuture>(new async::Future<BackgroundTaskContext, void*> {backgroundTask}));
+        }
+
+        ~IsoTpSocket() {
+            *_disposedFlag = true;
         }
 
         void send(uint8_t* data, uint16_t length) {
@@ -136,15 +169,25 @@ namespace core { namespace can {
                     default:
                         break;
                 }
-                _canInterface.send(frame);
+                _canInterface.writeFrame(frame);
                 index++;
                 packageType = ISOTP_CONSECUTIVE;
             }
         }
 
+        bool available() const { return !_received.empty(); }
+
+        bool tryReceive(IsoTpPacket& outPacket) {
+            if (!available())
+                return false;
+            _received.pop(outPacket);
+            _bufferedPayload -= outPacket.length();
+            return true;
+        }
+
     private:
         void copy(uint16_t& position, uint16_t& length, uint8_t bytes, uint8_t* src, uint8_t* dst) {
-            for (uint16_t i = 0; i < 6 && position < length; position++, i++) {
+            for (uint16_t i = 0; i < bytes && position < length; position++, i++) {
                 dst[i] = src[i];
             }
         }
@@ -155,11 +198,19 @@ namespace core { namespace can {
         }
 
         void discardPacket() {
-            if (packet.notNull())
-                packet = core::shared_ptr<IsoTpPacket>();
+            if (_packet.getData() != nullptr) {
+                _bufferedPayload -= _packet.length();
+                _packet = IsoTpPacket();
+            }
         }
 
-        void onDataReceived(CanFrame canFrame) {
+        void backgroundReceive() {
+            CanFrame canFrame;
+            if (_canInterface.tryReadFrame(canFrame))
+                onDataReceived(canFrame);
+        }
+
+        void onDataReceived(CanFrame& canFrame) {
             IsoTpFrame& f = reinterpret_cast<IsoTpFrame&>(canFrame);
             bool isMessageStart = f.getHeaderType() == ISOTP_SINGLE || f.getHeaderType() == ISOTP_FIRST;
             bool isMultiPartMessage = f.getHeaderType() == ISOTP_FIRST || f.getHeaderType() == ISOTP_CONSECUTIVE;
@@ -167,10 +218,14 @@ namespace core { namespace can {
             bool isFlowControl = f.getHeaderType() == ISOTP_FLOW_CONTROL;
 
             if (isMessageStart) {
-                packet = shared_ptr<IsoTpPacket>(new IsoTpPacket(f.getDataByteCount())); // overwrites any started packet
-                packet->appendFrame(f);
-            } else if (isContinuation && packet.notNull()) {
-                packet->appendFrame(f);
+                size_t recvLength = f.getDataByteCount();
+                if (_bufferedPayload + recvLength > _maxPayload)
+                    return;
+                _packet = IsoTpPacket(recvLength); // overwrites any started packet
+                _packet.appendFrame(f);
+                _bufferedPayload += recvLength;
+            } else if (isContinuation && !_packet.isFull()) {
+                _packet.appendFrame(f);
             } else if (isFlowControl) {
                 // TODO
             } else {
@@ -178,30 +233,30 @@ namespace core { namespace can {
                 discardPacket();
             }
 
-            if (packet.isNull())
+            if (_packet.getData() == nullptr)
                 return;
 
-            if (packet->isFull()) {
-                //core::shared_ptr<core::can::canbus::IsoTpPacket> p = packet;
-                this->notify(core::shared_ptr<core::can::IsoTpPacket>(packet));
-                discardPacket(); // Event listener must have taken ownership now.
+            if (_packet.isFull()) {
+                while (!_received.push(etl::move(_packet)));
             } else if (isMultiPartMessage && isMessageStart) {
                 sendContinueAllRequest();
             }
         }
 
-        void sendContinueAllRequest() {
+        void sendContinueAllRequest() const {
             CanFrame frame;
             frame.id = _canId;
             frame.payload[0] = 0x30; // 0x30 = ISOTP flow control + 0x00 = continue to send
-            _canInterface.send(frame);
+            _canInterface.writeFrame(frame);
         }
 
-        CanInterface& _canInterface;
+        ICanInterface& _canInterface;
         const canid_t _canId;
-        shared_ptr<IsoTpPacket> packet;
-        etl::delegate<void(core::can::CanFrame)> canFrameReceived;
-
+        IsoTpPacket _packet;
+        core::shared_ptr<bool> _disposedFlag;
+        size_t _maxPayload;
+        size_t _bufferedPayload;
+        etl::queue_spsc_atomic<IsoTpPacket, UC_CORE_ISOTP_QUEUE_SIZE> _received;
     };
 }}
 #endif //UC_CORE_ISOTPSOCKET_H

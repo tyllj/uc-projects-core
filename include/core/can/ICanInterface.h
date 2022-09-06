@@ -6,7 +6,6 @@
 #define UC_CORE_CANINTERFACE_H
 
 #include <stdint.h>
-#include "core/events/Observable.h"
 #include "core/unique_ptr.h"
 
 typedef uint16_t canid_t;
@@ -22,21 +21,22 @@ namespace core { namespace can {
    If a mask bit is set to a one, the corresponding ID bit will be compare with the value of the filter bit; if they match it is accepted otherwise the frame is rejected.
      */
 
+#pragma pack(push, 1)
     struct CanFrame {
         canid_t id;
         bool isRemoteRequest = false; // value of the rtr-bit
         uint8_t length = 8; // value of the dlc
         uint8_t payload[8];
     };
+#pragma pack(pop)
 
-    class CanInterface : public events::Observable<CanFrame> {
+    class ICanInterface {
     public:
-        virtual canid_t getFilter() = 0;
-        virtual void setFilter(canid_t filter) = 0;
-        virtual canid_t getFilterMask() = 0;
-        virtual void setFilterMask(canid_t filter) = 0;
-        virtual void send(CanFrame& canFrame) = 0;
-        virtual ~CanInterface() = default;
+        virtual void filter(canid_t filter) = 0;
+        virtual void mask(canid_t filter) = 0;
+        virtual void writeFrame(CanFrame& canFrame) = 0;
+        virtual bool tryReadFrame(CanFrame& outCanFrame) = 0;
+        virtual ~ICanInterface() = default;
     };
 }}
 

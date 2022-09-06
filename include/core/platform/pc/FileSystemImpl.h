@@ -36,16 +36,16 @@ namespace core { namespace io {
         }
         bool canRead() const final { return _file != NULL; }
         bool canWrite() const final { return _file != NULL; }
-        size_t getLength() const final {
+        size_t length() const final {
             if (_file == NULL)
                 return 0;
-            int32_t pos = getPosition();
+            int32_t pos = position();
             fseek(_file, 0L, SEEK_END);
-            int32_t size = getPosition();
+            int32_t size = position();
             fseek(_file, pos, SEEK_SET);
             return size;
         }
-        size_t getPosition() const final { return ftell(_file); }
+        size_t position() const final { return ftell(_file); }
         void writeByte(uint8_t byte) final {
             if (_file != NULL)
                 fputc(byte, _file);

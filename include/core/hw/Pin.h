@@ -7,8 +7,8 @@
 
 namespace core { namespace hw {
     class Input {
-        virtual volatile bool isHigh() = 0;
-        virtual volatile bool isLow() {
+        virtual bool isHigh() = 0;
+        virtual bool isLow() {
             return !isHigh();
         }
     };

@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 #include "etl/delegate.h"
-#include "CanInterface.h"
+#include "ICanInterface.h"
 #include "IsoTpSocket.h"
 #include "core/Event.h"
 
@@ -20,7 +20,7 @@ namespace core { namespace can {
     template<typename TMessage>
     class CanChannel {
     public:
-        explicit CanChannel(CanInterface &canInterface) : _socket(canInterface, TMessage::getCanId()) {
+        explicit CanChannel(ICanInterface &canInterface) : _socket(canInterface, TMessage::getCanId()) {
             _packetReceivedEventHandler.set<&CanChannel<TMessage>::onPacketReceived>(*this);
             _socket.newData() += _packetReceivedEventHandler;
         }
@@ -58,7 +58,7 @@ namespace core { namespace can {
     template<typename TMessage>
     class ResponsiveCanChannel : public CanChannel<TMessage> {
     public:
-        explicit ResponsiveCanChannel(CanInterface &canInterface) :
+        explicit ResponsiveCanChannel(ICanInterface &canInterface) :
             CanChannel<TMessage>(canInterface),
             _canInterface(canInterface),
             _rtrService(nullptr) {
@@ -87,7 +87,7 @@ namespace core { namespace can {
         }
 
     private:
-        core::can::CanInterface& _canInterface;
+        core::can::ICanInterface& _canInterface;
         etl::delegate<void(core::can::CanFrame)> _frameReceivedEventHandler;
         etl::delegate<TMessage(void)>* _rtrService;
     };

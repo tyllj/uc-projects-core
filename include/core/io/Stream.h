@@ -13,8 +13,8 @@ namespace core { namespace io {
         virtual ~Stream() {}
         virtual bool canRead() const { return false; }
         virtual bool canWrite() const { return false; }
-        virtual size_t getLength() const { return 0; }
-        virtual size_t getPosition() const { return 0; }
+        virtual size_t length() const { return 0; }
+        virtual size_t position() const { return 0; }
         virtual void close() {  }
         virtual void flush() {  }
         virtual int32_t readByte() { return -1; }

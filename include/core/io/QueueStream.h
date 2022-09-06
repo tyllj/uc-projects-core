@@ -16,8 +16,8 @@ namespace core { namespace io {
     public:
         bool canRead() const override { return true; }
         bool canWrite() const override { return true; }
-        size_t getLength() const override { return size; }
-        size_t getPosition() const override { return 0; }
+        size_t length() const override { return size; }
+        size_t position() const override { return 0; }
         void close() override {  }
         void flush() override {  }
         int32_t readByte() override {

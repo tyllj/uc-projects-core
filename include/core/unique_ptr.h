@@ -148,6 +148,7 @@ namespace core {
             _ptr = other._ptr;
             other._ptr = oldPtr;
         }
+
         void reset() {
             T* tmp = release();
             delete tmp;

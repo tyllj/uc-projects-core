@@ -25,7 +25,7 @@ namespace core { namespace hw {
             _bitOrder(bitOrder) {
         }
 
-        void shiftOut(uint8_t value) {
+        void shiftByte(uint8_t value) {
             uint8_t i;
 
             for (i = 0; i < 8; i++)  {

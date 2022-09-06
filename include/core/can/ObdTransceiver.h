@@ -7,19 +7,24 @@
 
 #include "core/Math.h"
 #include "core/async/Promise.h"
-#include "core/can/CanInterface.h"
+#include "core/can/ICanInterface.h"
 #include "core/can/IsoTpSocket.h"
 #include "core/can/ObdData.h"
 
 namespace core { namespace can {
+    constexpr canid_t OBDII_REQUEST_ID = 0x7DF;
+    constexpr canid_t OBDII_RESPONSE_ID = 0x7E8;
+
     class ObdTransceiver {
     public:
-        explicit ObdTransceiver(CanInterface& canInterface) :
+        explicit ObdTransceiver(ICanInterface& canInterface) :
             _pendingResponse(nullptr),
             _canInterface(canInterface),
-            _responseSocket(canInterface, 0x7DF) {
+            _responseSocket(canInterface, OBDII_RESPONSE_ID) {
             _packetReceivedCallback.set<ObdTransceiver, &ObdTransceiver::onResponseReceived>(*this);
         }
+
+        ObdTransceiver(const IsoTpSocket &responseSocket) : _responseSocket(responseSocket) {}
 
         ~ObdTransceiver() {
             if (isRequestPending())
@@ -88,7 +93,7 @@ namespace core { namespace can {
     private:
         MultiRequest _request;
         core::async::Promise<MultiResponse>* _pendingResponse;
-        CanInterface& _canInterface;
+        ICanInterface& _canInterface;
         IsoTpSocket _responseSocket;
         etl::delegate<void(shared_ptr<core::can::IsoTpPacket>)> _packetReceivedCallback;
     };

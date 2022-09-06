@@ -14,43 +14,43 @@
 #include "core/cli/Ls.h"
 #include "core/cli/Cat.h"
 #include "core/Sleep.h"
-#include "core/can/ObdTransceiver.h"
-#include "core/can/Channel.h"
 #include "etl/delegate.h"
 #include "core/io/FileSystemInfo.h"
 #include "core/io/FileSystem.h"
 #include "core/platform/pc/FileSystemImpl.h"
 #include "core/cli/Ush.h"
-#include "core/platform/pc/UsbCan.h"
+#include "core/platform/pc/UsbCanSeeed.h"
 #include "core/async/Future.h"
 #include "core/unique_ptr.h"
 #include "core/async/MainLoopDispatcher.h"
-
-core::unique_ptr<char[]> getY() {
-    return core::unique_ptr<char[]>(new char[] {"Hallo Welt"});
-}
+#include "core/can/IsoTpSocket.h"
 
 int main() {
     core::async::MainLoopDispatcher<8> dispatcher;
 
     core::io::ports::SerialPort usb("COM11");
-    usb.setBaudRate(2000000);
+    usb.baudRate(core::can::USBCAN_SERIAL_BAUD);
     usb.open();
-    core::can::UsbCan can(dispatcher, usb, 125000);
+    core::can::UsbCanSeeed can(usb, 125000);
     core::io::ConsoleReader reader;
 
-    etl::delegate<void(core::can::CanFrame)> onReceived([] (core::can::CanFrame frame) {
+    core::can::IsoTpSocket socket(dispatcher, can, 0x7DF);
 
+    etl::delegate<void(core::can::CanFrame)> onReceived([] (core::can::CanFrame&& frame) {
         printf("id=%i dlc=%i: ", frame.id, frame.length);
         for (uint8_t i; i<frame.length; i++)
             putch(frame.payload[i]);
         putch('\n');
     });
-    can.newData() += onReceived;
     bool quit(false);
     while(!quit) {
         dispatcher.dispatchOne();
         sleepms(5);
+
+        core::can::CanFrame recv;
+        if (can.tryReadFrame(recv)) {
+            onReceived(recv);
+        }
 
         int32_t r;
         if (-1 != (r=reader.read())) {
@@ -63,7 +63,7 @@ int main() {
             for (uint8_t i = 0; i < 8; i++) f.payload[i] = 0;
             //printf("Sending char: %c\n", uint8_t(r));
             f.payload[0] = uint8_t(r);
-            can.send(f);
+            can.writeFrame(f);
         }
     }
 
@@ -74,10 +74,10 @@ int main() {
     tty.setBaudRate(9600);
     tty.open();
 
-    usb.setBaudRate(115200);
+    usb.baudRate(115200);
     usb.open();
 
-    core::can::UsbCan can(usb);
+    core::can::UsbCanSeeed can(usb);
 
     core::io::StreamReader ttyin(tty);
     core::io::StreamWriter ttyout(tty);

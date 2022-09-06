@@ -55,6 +55,7 @@ namespace core {
 
         StringBuilder& append(float value, int8_t width, uint8_t decimalPlaces)  {
             append((double) value, width, decimalPlaces);
+            return *this;
         }
         StringBuilder& append(double value, int8_t width, uint8_t decimalPlaces)  {
             if (_position + width >= _length)
@@ -66,13 +67,13 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(int32_t value, int8_t width) {
+        StringBuilder& append(int32_t value, int8_t width, char padding = ' ') {
             if (_position + width >= _length)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
                 return *this;
-            pad(width - intWidth);
+            pad(width - intWidth, padding);
             core::ltoa(value, ptr(), 10);
             seek(intWidth);
         }
@@ -96,13 +97,13 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(int16_t value, int8_t width) {
+        StringBuilder& append(int16_t value, int8_t width, char padding = ' ') {
             if (_position + width >= _length)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
                 return *this;
-            pad(width - intWidth);
+            pad(width - intWidth, padding);
             core::itoa(value, ptr(), 10);
             seek(intWidth);
             return *this;
@@ -127,13 +128,13 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(int8_t value, int8_t width) {
+        StringBuilder& append(int8_t value, int8_t width, char padding = ' ') {
             if (_position + width >= _length)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
                 return *this;
-            pad(width - intWidth);
+            pad(width - intWidth, padding);
             core::itoa((int16_t)value, ptr(), 10);
             seek(intWidth);
             return *this;
@@ -158,13 +159,13 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(uint32_t value, int8_t width) {
+        StringBuilder& append(uint32_t value, int8_t width, char padding = ' ') {
             if (_position + width >= _length)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
                 return *this;
-            pad(width - intWidth);
+            pad(width - intWidth, padding);
             core::ultoa(value, ptr(), 10);
             seek(intWidth);
             return *this;
@@ -189,13 +190,13 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(uint16_t value, int8_t width) {
+        StringBuilder& append(uint16_t value, int8_t width, char padding = ' ') {
             if (_position + width >= _length)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
                 return *this;
-            pad(width - intWidth);
+            pad(width - intWidth, padding);
             core::ultoa((int16_t)value, ptr(), 10);
             seek(intWidth);
             return *this;
@@ -220,13 +221,13 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(uint8_t value, int8_t width) {
+        StringBuilder& append(uint8_t value, int8_t width, char padding = ' ') {
             if (_position + width >= _length)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
                 return *this;
-            pad(width - intWidth);
+            pad(width - intWidth, padding);
             core::itoa((uint16_t)value, ptr(), 10);
             seek(intWidth);
             return *this;
@@ -342,6 +343,11 @@ namespace core {
             append(::core::cstrings::newLine(mode));
         }
 
+        void clear() {
+			_position = 0;
+			_buffer[_position] = '\0';
+        }
+
         const char* toString() const { return _buffer;}
 
     private:
@@ -351,8 +357,8 @@ namespace core {
             _position += width;
         }
 
-        inline void pad(size_t width) {
-            memset(ptr(), ' ', width);
+        inline void pad(size_t width, char padding) {
+            memset(ptr(), padding, width);
             seek(width);
         }
 

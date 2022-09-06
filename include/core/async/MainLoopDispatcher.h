@@ -32,7 +32,7 @@ namespace core { namespace async {
 
     private:
         etl::vector<core::shared_ptr<IFuture>, MAX_TASKS> _tasks;
-        uint32_t _current;
+        size_t _current;
     };
 }}
 
