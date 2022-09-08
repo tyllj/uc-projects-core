@@ -29,6 +29,23 @@ namespace core { namespace can {
         ISOTP_NO_FC = 255
     };
 
+    enum IsoTpSeparationDelayUnit {
+        ISOTP_MICROS,
+        ISOTP_MILLIS
+    };
+
+    struct IsoTpSeparationDelay {
+    public:
+        uint16_t rawValue;
+        IsoTpSeparationDelayUnit unit() {
+
+        }
+        uint16_t value() {
+
+        }
+
+    };
+
     union IsoTpFrame {
     public:
         IsoTpFrame(CanFrame canData) : _canData(canData) {}
@@ -68,7 +85,7 @@ namespace core { namespace can {
                 return static_cast<IsoTpFlowControlType>(_canData.payload[0] & 0x0F);
             return ISOTP_NO_FC;
         }
-        uint8_t getSeparationTimeMillis() {
+        uint8_t getSeparationTime() {
             return 0;
         } //TODO: Handle 100x µS delays.
     private:
@@ -84,6 +101,9 @@ namespace core { namespace can {
         }
 
         void appendFrame(IsoTpFrame& frame) {
+            _sequenceId = frame.getIndex();
+            _separationDelay = frame.getSeparationTime();
+            if (frame.)
             uint8_t* p = frame.getPayload();
             for (uint16_t i = 0; _position < _length && i < frame.getDataByteCount(); _position++, i++) {
                 _data[_position] = p[i];
@@ -100,10 +120,11 @@ namespace core { namespace can {
             return _position == _length;
         }
 
-
     private:
         size_t _length;
         size_t _position;
+        uint16_t _separationDelay;
+        uint8_t _sequenceId;
         core::unique_ptr<uint8_t[]> _data;
     };
 
@@ -119,28 +140,24 @@ namespace core { namespace can {
         };
     public:
         explicit IsoTpSocket(core::async::IDispatcher& dispatcher, core::can::ICanInterface& canInterface, canid_t canId, size_t maxPayload = 128) :
-            _canInterface(canInterface),
-            _canId(canId),
-            _disposedFlag(core::shared_ptr<bool>(new bool{false})),
-            _maxPayload(maxPayload),
-            _bufferedPayload(0) {
+                _canInterface(canInterface),
+                _txId(canId),
+                _disposedFlag(core::shared_ptr<bool>(new bool{false})),
+                _maxPayload(maxPayload),
+                _bufferedPayload(0) {
             startBackgroundWorker(dispatcher);
         }
 
         void startBackgroundWorker(async::IDispatcher &dispatcher) const {
             etl::delegate<void(async::FutureContext<BackgroundTaskContext, void*>&)> backgroundTaskDelegate;
             backgroundTaskDelegate.set([=](async::FutureContext<BackgroundTaskContext, void*> ctx) {
-                if (*(ctx.getData().disposedFlag))
+                if (ctx.getData().disposedFlag.unique())
                     FUTURE_RETURN(ctx, nullptr);
                 ctx.getData().socket->backgroundReceive();
             });
 
             async::Future<BackgroundTaskContext, void*> backgroundTask({const_cast<IsoTpSocket*>(this), _disposedFlag}, backgroundTaskDelegate);
             dispatcher.run(shared_ptr<async::IFuture>(new async::Future<BackgroundTaskContext, void*> {backgroundTask}));
-        }
-
-        ~IsoTpSocket() {
-            *_disposedFlag = true;
         }
 
         void send(uint8_t* data, uint16_t length) {
@@ -151,7 +168,7 @@ namespace core { namespace can {
             while (position < length) {
                 CanFrame frame;
                 setDefaultBytes(frame.payload);
-                frame.id = _canId;
+                frame.id = _txId;
                 switch (packageType) {
                     case ISOTP_SINGLE:
                         frame.payload[0] = length;
@@ -206,7 +223,7 @@ namespace core { namespace can {
 
         void backgroundReceive() {
             CanFrame canFrame;
-            if (_canInterface.tryReadFrame(canFrame))
+            if (_canInterface.tryReadFrame(canFrame) && canFrame.id == _rxId)
                 onDataReceived(canFrame);
         }
 
@@ -227,7 +244,7 @@ namespace core { namespace can {
             } else if (isContinuation && !_packet.isFull()) {
                 _packet.appendFrame(f);
             } else if (isFlowControl) {
-                // TODO
+                //ToDo
             } else {
                 // invalid packet
                 discardPacket();
@@ -245,13 +262,14 @@ namespace core { namespace can {
 
         void sendContinueAllRequest() const {
             CanFrame frame;
-            frame.id = _canId;
+            frame.id = _txId;
             frame.payload[0] = 0x30; // 0x30 = ISOTP flow control + 0x00 = continue to send
             _canInterface.writeFrame(frame);
         }
 
         ICanInterface& _canInterface;
-        const canid_t _canId;
+        canid_t _txId;
+        canid_t _rxId;
         IsoTpPacket _packet;
         core::shared_ptr<bool> _disposedFlag;
         size_t _maxPayload;
