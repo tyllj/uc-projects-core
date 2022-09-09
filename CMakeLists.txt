@@ -14,5 +14,5 @@ include_directories(lib/etl/include)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 add_compile_definitions(CORE_TESTAPP ETL_NO_STL)
-add_executable(main main.cpp lib/RS-232/rs232.c)
+add_executable(main main.cpp lib/RS-232/rs232.c include/core/can/IsoTpSocket.h)
 target_link_libraries(main ${CURSES_LIBRARIES})

@@ -10,4 +10,8 @@
 inline void sleepms(long delay) { _delay_ms(delay); }
 #endif
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+
 #endif //UC_CORE_SLEEP_H

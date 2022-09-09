@@ -124,14 +124,6 @@ namespace core {
 
         explicit operator bool() const {return _ptr;}
 
-        inline bool isNull() const {
-            return _ptr == nullptr;
-        }
-
-        inline bool notNull() const {
-            return _ptr != nullptr;
-        }
-
         inline T& operator* () const {
             return *(_ptr);
         }
@@ -201,14 +193,6 @@ namespace core {
 
         inline bool unique() const {
             return ((int8_t) *_refCount) == 1;
-        }
-
-        inline bool isNull() const {
-            return _ptr == nullptr;
-        }
-
-        inline bool notNull() const {
-            return _ptr != nullptr;
         }
 
         inline T& operator* () const {

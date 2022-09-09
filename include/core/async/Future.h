@@ -18,6 +18,7 @@ namespace core { namespace async {
         virtual bool runSlice() = 0;
         virtual void wait() = 0;
         virtual bool isCompleted() = 0;
+        virtual void cancel() = 0;
         virtual ~IFuture() = default;
     };
 
@@ -53,6 +54,7 @@ namespace core { namespace async {
         bool isCompleted() {
             return _completed;
         }
+
     private:
         TData _data;
         etl::optional<TResult> _result;
@@ -76,6 +78,10 @@ namespace core { namespace async {
         void wait() final {
             while (!isCompleted())
                 _context._sliceFunc(_context);
+        }
+
+        void cancel() final {
+            _context.setResult(etl::optional<TResult>());
         }
 
         etl::optional<TResult>& waitForResult() {
