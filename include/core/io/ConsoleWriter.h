@@ -15,10 +15,8 @@ namespace core { namespace io {
             void write(const unsigned char c) final {
                 putchar(c);
             }
-            virtual void write(const char* bytes, uint32_t count) final {
-                for (uint32_t i = 0; i < count; i++)
-                    if (putchar(bytes[i]) == EOF)
-                        return;
+            virtual void write(const  char* str) final {
+                puts(str);
             }
             virtual void flush() {}
         };

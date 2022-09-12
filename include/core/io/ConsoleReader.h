@@ -21,7 +21,7 @@ namespace core { namespace io {
         class ConsoleReader : public TextReader {
         public:
             int32_t read() final {
-                if (!_kbhit())
+                if (!kbhit())
                     return -1;
                 uint8_t c = getch();
                 if (c == '\r')

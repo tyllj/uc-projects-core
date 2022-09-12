@@ -144,6 +144,8 @@ namespace core {
         explicit shared_ptr(T* const ptr) : _ptr(ptr), _refCount(new _CORE_ATOMIC_IMPL(1)) {
         }
 
+        shared_ptr(size_t n) : shared_ptr(new T[n]) {}
+
         shared_ptr(const shared_ptr<T[]>& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             if (_refCount)
                 (*_refCount)++;
@@ -194,6 +196,8 @@ namespace core {
         inline bool unique() const {
             return ((int8_t) *_refCount) == 1;
         }
+
+        explicit operator bool() const {return _ptr;}
 
         inline T& operator* () const {
             return *(_ptr);

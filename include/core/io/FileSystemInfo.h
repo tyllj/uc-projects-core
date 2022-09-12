@@ -72,7 +72,7 @@ namespace core { namespace io {
         DirectoryInfo getDirectory() {
             core::StringBuilder sb;
             core::io::path::getDirectoryName(sb, getFullName());
-            return DirectoryInfo(*this, sb.toString());
+            return DirectoryInfo(*this, sb.toCString());
         }
 
         uint16_t forEach(etl::delegate<void(FileSystemInfo&)> action) {

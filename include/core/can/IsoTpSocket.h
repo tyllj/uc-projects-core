@@ -116,7 +116,7 @@ namespace core { namespace can {
 
     iso15765_t IsoTpSocket::createIsoTpHandler() const {
         iso15765_t handler;
-        handler.addr_md = N_ADM_NORMAL;
+        handler.fr_addr_md = N_ADM_NORMAL;
         handler.fr_id_type = CBUS_ID_T_STANDARD;
         handler.config.stmin = 0x05;
         handler.config.bs = 0x0F;

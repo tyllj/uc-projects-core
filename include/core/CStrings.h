@@ -7,7 +7,16 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "shared_ptr.h"
+
+#define SUBSTRING_NOT_FOUND -1
+
+namespace core {
+    typedef core::shared_ptr<char[]> CString;
+}
+
 namespace core { namespace cstrings {
+
     inline uint8_t split(char* str, const char spliterator, char** dest, uint8_t limit) {
         if (limit == 0)
             return 0;
@@ -46,6 +55,28 @@ namespace core { namespace cstrings {
 
     inline size_t length(const char* str) {
         return strlen(str);
+    }
+
+    inline int32_t indexOf(const char* haystack, const char* needle) {
+        const char* ptr = strstr(haystack, needle);
+        if (ptr == NULL)
+            return -1;
+        else
+            return static_cast<int32_t>(ptr - haystack);
+    }
+
+    inline int32_t indexOf(const char* haystack, const char needle) {
+        const char* ptr = strchr(haystack, needle);
+        if (ptr == NULL)
+            return -1;
+        else
+            return static_cast<int32_t>(ptr - haystack);
+    }
+
+    inline core::CString toSharedCString(const char* str) {
+        CString result = CString(length(str) + 1);
+        strcpy(result.get(), str);
+        return result;
     }
 
     inline const char* empty() {

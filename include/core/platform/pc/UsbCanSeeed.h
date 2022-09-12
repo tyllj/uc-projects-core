@@ -7,44 +7,50 @@
 
 #include <stdint.h>
 #include <unistd.h>
+
+#include "core/platform/pc/Usb.h"
 #include "core/io/Stream.h"
 #include "core/shared_ptr.h"
 #include "core/can/ICanInterface.h"
 #include "core/Bits.h"
 
 namespace core { namespace can {
-
-    typedef enum {
-        CANUSB_SPEED_INVALID = 0x00,
-        CANUSB_SPEED_1000000 = 0x01,
-        CANUSB_SPEED_800000  = 0x02,
-        CANUSB_SPEED_500000  = 0x03,
-        CANUSB_SPEED_400000  = 0x04,
-        CANUSB_SPEED_250000  = 0x05,
-        CANUSB_SPEED_200000  = 0x06,
-        CANUSB_SPEED_125000  = 0x07,
-        CANUSB_SPEED_100000  = 0x08,
-        CANUSB_SPEED_50000   = 0x09,
-        CANUSB_SPEED_20000   = 0x0a,
-        CANUSB_SPEED_10000   = 0x0b,
-        CANUSB_SPEED_5000    = 0x0c,
-    } CANUSB_SPEED;
-
-    typedef enum {
-        CANUSB_MODE_NORMAL          = 0x00,
-        CANUSB_MODE_LOOPBACK        = 0x01,
-        CANUSB_MODE_SILENT          = 0x02,
-        CANUSB_MODE_LOOPBACK_SILENT = 0x03,
-    } CANUSB_MODE;
-
-    typedef enum {
-        CANUSB_FRAME_STANDARD = 0x01,
-        CANUSB_FRAME_EXTENDED = 0x02,
-    } CANUSB_FRAME;
-
     constexpr uint32_t USBCAN_SERIAL_BAUD = 2000000;
 
+    core::CString UsbCanSeeedAutodetectPath() {
+        return core::io::ports::usb::findCh340();
+    }
+
     class UsbCanSeeed : public ICanInterface {
+    private:
+        typedef enum {
+            CANUSB_SPEED_INVALID = 0x00,
+            CANUSB_SPEED_1000000 = 0x01,
+            CANUSB_SPEED_800000  = 0x02,
+            CANUSB_SPEED_500000  = 0x03,
+            CANUSB_SPEED_400000  = 0x04,
+            CANUSB_SPEED_250000  = 0x05,
+            CANUSB_SPEED_200000  = 0x06,
+            CANUSB_SPEED_125000  = 0x07,
+            CANUSB_SPEED_100000  = 0x08,
+            CANUSB_SPEED_50000   = 0x09,
+            CANUSB_SPEED_20000   = 0x0a,
+            CANUSB_SPEED_10000   = 0x0b,
+            CANUSB_SPEED_5000    = 0x0c,
+        } CANUSB_SPEED;
+
+        typedef enum {
+            CANUSB_MODE_NORMAL          = 0x00,
+            CANUSB_MODE_LOOPBACK        = 0x01,
+            CANUSB_MODE_SILENT          = 0x02,
+            CANUSB_MODE_LOOPBACK_SILENT = 0x03,
+        } CANUSB_MODE;
+
+        typedef enum {
+            CANUSB_FRAME_STANDARD = 0x01,
+            CANUSB_FRAME_EXTENDED = 0x02,
+        } CANUSB_FRAME;
+
     public:
         UsbCanSeeed(core::io::Stream& serialPort, uint32_t baudRate = 500000) :
             _serialPort(serialPort),
@@ -254,6 +260,8 @@ namespace core { namespace can {
         uint8_t _serialFrame[32];
         uint8_t _serialFrameLength;
     };
+
+
 }}
 
 #endif //SGLOGGER_USBCANSEEED_H

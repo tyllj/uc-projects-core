@@ -20,7 +20,7 @@ namespace core {
         StringBuilder(char* str, size_t length) : _buffer(str), _length(length), _position(0) {}
         size_t length() const { return _position; }
 
-        operator const char*() const { return toString(); }
+        operator const char*() const { return toCString(); }
 
         StringBuilder& append(const char* str) {
             size_t i = 0;
@@ -348,7 +348,11 @@ namespace core {
 			_buffer[_position] = '\0';
         }
 
-        const char* toString() const { return _buffer;}
+        const char* toCString() const { return _buffer;}
+
+        core::CString toSharedCString() {
+            return core::cstrings::toSharedCString(toCString());
+        }
 
     private:
         inline char* ptr() const { return &_buffer[_position]; }

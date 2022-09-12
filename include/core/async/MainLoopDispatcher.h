@@ -19,7 +19,7 @@ namespace core { namespace async {
             if (_current > _tasks.size() - 1)
                 _current = 0;
 
-            core::shared_ptr<IFuture> currentTask = _tasks.at(_current).get();
+            core::shared_ptr<IFuture> currentTask = _tasks.at(_current);
             if (currentTask->runSlice())
                 _tasks.erase(_tasks.begin() + _current);
 

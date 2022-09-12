@@ -62,6 +62,9 @@
 #define __CONIO_H
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #define MAX_OKIEN 256
 
 #define BLACK       0
@@ -216,6 +219,7 @@ int cprintf(char *fmt, ...)
 
     va_list ap;
     va_start(ap, fmt);
+
 
     int i = vwprintw(aktywneOkno,fmt, ap);	//jakie proste ;-)
 
@@ -424,5 +428,7 @@ void window(int xup, int yup, int xdown, int ydown)
 
     return;
 }
+
+#pragma GCC diagnostic pop
 
 #endif //UC_CORE_CONIO_H

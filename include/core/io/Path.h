@@ -15,7 +15,7 @@ namespace core { namespace io { namespace path {
             sb.append(path2);
         } else {
             sb.append(path1);
-            if (sb.toString()[sb.length() - 1] != '/')
+            if (sb.toCString()[sb.length() - 1] != '/')
                 sb.append('/');
             sb.append(path2);
         }
