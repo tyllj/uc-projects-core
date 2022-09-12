@@ -81,7 +81,7 @@ int main() {
 
     core::io::StreamReader ttyin(tty);
     core::io::StreamWriter ttyout(tty);
-    ttyout.setNewLine(core::cstrings::MSDOS);
+    ttyout.setNewLine(core::cstrings::CRLF);
 
     core::shared_ptr<core::cli::StringMap<core::cli::ProgramFactory, 128>> programs(new core::cli::StringMap<core::cli::ProgramFactory, 128>());
     programs->addOrUpdate("echo", []() { return core::shared_ptr<core::cli::CliProgram>(new core::cli::Echo()); });

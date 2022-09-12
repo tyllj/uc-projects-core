@@ -53,14 +53,16 @@ namespace core { namespace cstrings {
     }
 
     enum NewLineMode {
-        POSIX,
-        MSDOS
+        LF,
+        CRLF,
+        CR
     };
 
     constexpr const char * newLine(NewLineMode mode) {
         switch (mode) {
-            case POSIX: return "\n";
-            case MSDOS: return "\r\n";
+            case LF: return "\n";
+            case CRLF: return "\r\n";
+            case CR: return "\r";
             default: return cstrings::empty();
         }
     }

@@ -41,7 +41,7 @@ namespace core { namespace io {
         }
 
     private:
-        core::cstrings::NewLineMode _newLineMode = core::cstrings::POSIX;
+        core::cstrings::NewLineMode _newLineMode = core::cstrings::LF;
     };
 }};
 

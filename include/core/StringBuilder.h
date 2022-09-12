@@ -336,7 +336,7 @@ namespace core {
         }
 
         void lineBreak() {
-            append(::core::cstrings::newLine(cstrings::POSIX));
+            append(::core::cstrings::newLine(cstrings::LF));
         }
 
         void lineBreak(::core::cstrings::NewLineMode mode) {
