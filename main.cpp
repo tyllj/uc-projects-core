@@ -24,6 +24,7 @@
 #include "core/unique_ptr.h"
 #include "core/async/MainLoopDispatcher.h"
 #include "core/can/IsoTpSocket.h"
+#include "core/can/elm/ElmCanInterface.h"
 
 int main() {
     core::io::ConsoleWriter out;

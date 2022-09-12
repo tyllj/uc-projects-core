@@ -354,6 +354,10 @@ namespace core {
             return core::cstrings::toSharedCString(toCString());
         }
 
+        operator const char*() {
+            return _buffer;
+        }
+
     private:
         inline char* ptr() const { return &_buffer[_position]; }
 

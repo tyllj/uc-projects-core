@@ -11,6 +11,7 @@
 #include "core/io/StreamReader.h"
 #include "ElmAtCommands.h"
 #include "core/StringBuilder.h"
+#include <string>
 
 namespace core { namespace can { namespace elm {
     class ElmCanInterface : public core::can::ICanInterface {
@@ -33,12 +34,29 @@ namespace core { namespace can { namespace elm {
         }
 
         void writeFrame(CanFrame& canFrame) final {
-            core::StringBuilder sb;
-            for (uint8_t i = 0; i < canFrame.length; i++) {
-                sb.appendHex(canFrame.payload[i]);
-                sb.appendHex(' ');
+            core::StringBuilder cmd;
+            if (_txId != canFrame.id) {
+                cmd.append("ATSH");
+                std::string idStr = canIdToString(canFrame.id);
+                cmd.append(idStr.c_str());
             }
-            enqueCommand(sb.toString());
+
+            if (canFrame.isRemoteRequest) {
+                cmd.append("RTR");
+            } else {
+                for (uint8_t i = 0; i < canFrame.length; i++) {
+                    cmd.appendHex(canFrame.payload[i]);
+                }
+            }
+            enqueCommand(cmd);
+
+        }
+
+        std::string canIdToString(canid_t canid) const {
+            char idStr[5];
+            StringBuilder id(idStr, 5);
+            id.appendHex(canid);
+            return std::string (id);
         }
 
         bool tryReadFrame(CanFrame& outCanFrame) final {
@@ -57,19 +75,19 @@ namespace core { namespace can { namespace elm {
 
         void enqueCommand(const char* cmd) {
             _ready = false;
-            strncpy(_nextCommand, cmd, sizeof(_nextCommand));
+            _commandQueue.emplace(cmd);
         }
 
         void dispatchCommand() {
-            _elmOut.writeLine(_nextCommand);
-            _nextCommand[0] = '\0';
+
         }
 
     private:
         core::io::Stream& _elm;
         core::io::StreamWriter _elmOut;
         core::io::StreamReader _elmIn;
-        char _nextCommand[64];
+        canid_t _txId;
+        etl::queue_spsc_atomic<std::string, 8> _commandQueue;
         char _response[64];
         bool _ready;
     };
