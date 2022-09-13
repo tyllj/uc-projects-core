@@ -26,19 +26,29 @@ namespace core { namespace can { namespace elm {
         ~ElmCanInterface() override = default;
 
         void filter(canid_t filter) final {
-
+            std::string idStr = canIdToString(_txId);
+            core::StringBuilder cmd;
+            cmd.append("ATCF");
+            cmd.append(idStr.c_str());
+            enqueCommand(cmd);
         }
 
         void mask(canid_t filter) final {
-
+            std::string idStr = canIdToString(_txId);
+            core::StringBuilder cmd;
+            cmd.append("ATCM");
+            cmd.append(idStr.c_str());
+            enqueCommand(cmd);
         }
 
         void writeFrame(CanFrame& canFrame) final {
             core::StringBuilder cmd;
             if (_txId != canFrame.id) {
+                _txId = canFrame.id;
+                std::string idStr = canIdToString(_txId);
                 cmd.append("ATSH");
-                std::string idStr = canIdToString(canFrame.id);
                 cmd.append(idStr.c_str());
+                enqueCommand(cmd);
             }
 
             if (canFrame.isRemoteRequest) {
@@ -49,28 +59,29 @@ namespace core { namespace can { namespace elm {
                 }
             }
             enqueCommand(cmd);
-
         }
 
         std::string canIdToString(canid_t canid) const {
             char idStr[5];
             StringBuilder id(idStr, 5);
             id.appendHex(canid);
-            return std::string (id);
+            return {id };
         }
 
         bool tryReadFrame(CanFrame& outCanFrame) final {
 
         }
 
-        bool isReady() const {
-            return _ready;
-        }
-
     private:
         void initialize() {
-            enqueCommand("ATZ");
+            enqueCommand("ATZ"); // reset
+            // Echo off
+            // DIsable autoformatting
             // Set variable DLC
+            // Disable flow control
+            // Disable silent monitoring
+            // Enable Monitor all messages
+            // Bypass initialization sequence
         }
 
         void enqueCommand(const char* cmd) {
@@ -79,7 +90,10 @@ namespace core { namespace can { namespace elm {
         }
 
         void dispatchCommand() {
-
+            if (_commandQueue.empty())
+                return;
+            std::string cmd;
+            _commandQueue.pop(cmd);
         }
 
     private:
