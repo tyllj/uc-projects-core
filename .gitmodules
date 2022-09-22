@@ -7,6 +7,3 @@
 [submodule "lib/etl"]
 	path = lib/etl
 	url = https://github.com/ETLCPP/etl.git
-[submodule "lib/iso15765-canbus"]
-	path = lib/iso15765-canbus
-	url = git@github.com:tyllj/iso15765-canbus.git
