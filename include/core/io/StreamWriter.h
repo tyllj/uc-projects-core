@@ -20,7 +20,7 @@ namespace core { namespace io {
                 _stream.write(reinterpret_cast<const uint8_t *>(str), 0, cstrings::length(str));
             }
 
-            void write(const unsigned char c) final {
+            void write(char c) final {
                 _stream.writeByte(c);
             }
 

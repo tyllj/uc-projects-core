@@ -23,7 +23,7 @@ namespace core { namespace io {
             for (const char* c = str; *c != '\0'; c++)
                 write(*c);
         }
-        virtual void write(const unsigned char c) = 0;
+        virtual void write(char c) = 0;
 
         virtual void writeLine(const char* str) {
             write(str);

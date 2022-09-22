@@ -16,5 +16,5 @@ set_source_files_properties(lib/iso15765-canbus/src/lib_iso15765.c PROPERTIES CO
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 add_compile_definitions(CORE_TESTAPP ETL_NO_STL)
-add_executable(main main.cpp lib/RS-232/rs232.c lib/iso15765-canbus/src/lib_iso15765.c lib/iso15765-canbus/src/lib_iqueue.c include/core/platform/pc/Usb.h)
+add_executable(main main.cpp lib/RS-232/rs232.c lib/iso15765-canbus/src/lib_iso15765.c lib/iso15765-canbus/src/lib_iqueue.c)
 target_link_libraries(main ${CURSES_LIBRARIES})

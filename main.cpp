@@ -24,16 +24,16 @@
 #include "core/unique_ptr.h"
 #include "core/async/MainLoopDispatcher.h"
 #include "core/can/IsoTpSocket.h"
-#include "core/can/elm/ElmCanInterface.h"
+//#include "core/can/elm/ElmCanInterface.h"
+#include "core/can/elm/ElmCommandInterpreter.h"
 
 int main() {
-    core::io::ConsoleWriter out;
-    core::CString detectedPath = core::can::UsbCanSeeedAutodetectPath();
-    if (core::cstrings::isNullOrEmpty(detectedPath.get()))
-        out.writeLine("Not found");
-    else
-        out.writeLine(detectedPath.get());
-    return 0;
+    core::async::MainLoopDispatcher<16> dispatcher;
+
+    for (;;) {
+        dispatcher.dispatchOne();
+
+    }
 }
 
 #endif

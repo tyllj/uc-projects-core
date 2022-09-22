@@ -8,7 +8,10 @@
 #include <stdint.h>
 #include "core/unique_ptr.h"
 
+
+
 typedef uint16_t canid_t;
+constexpr canid_t CANID_11_MAX = 0x7FF;
 
 namespace core { namespace can {
     /*

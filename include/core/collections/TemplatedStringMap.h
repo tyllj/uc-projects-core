@@ -23,7 +23,7 @@ namespace core {namespace collections {namespace TemplatedStringMap {
     >
     class head {
     public:
-        const bool isEmpty() const { return false; }
+        bool isEmpty() const { return false; }
 
         const TValue get(const char* k) const {
             return core::cstrings::equals(k, key)
@@ -31,14 +31,14 @@ namespace core {namespace collections {namespace TemplatedStringMap {
                    : TTail().get(k);
         }
 
-        const bool contains(const char* k) const {
+        bool contains(const char* k) const {
             return (core::cstrings::equals(k, key) || TTail().contains(k));
         }
 
-        const uint16_t count() const { return 1 + TTail().count(); }
+        uint16_t count() const { return 1 + TTail().count(); }
 
         template<const char* newKey, TValue newValue>
-        const auto add() const {
+        auto add() const {
             if (contains(newKey))
                 return head<TValue, TTail, key, value>();
             return head<TValue, head<TValue, TTail, key, value>, newKey, newValue>();
@@ -48,16 +48,16 @@ namespace core {namespace collections {namespace TemplatedStringMap {
     template <typename TValue, TValue def>
     class nothing {
     public:
-        const bool isEmpty() const { return true; }
+        bool isEmpty() const { return true; }
 
         const TValue get(const char* k) const { return def; }
 
-        const bool contains(const char* k) const { return false; }
+        bool contains(const char* k) const { return false; }
 
-        const uint16_t count() const { return 0; }
+        uint16_t count() const { return 0; }
 
         template<const char* newKey, TValue newValue>
-        const auto add() const {
+        auto add() const {
             head<TValue, nothing< TValue, def>, newKey, newValue> newHead;
             return newHead;
         }

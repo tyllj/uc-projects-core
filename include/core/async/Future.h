@@ -12,7 +12,6 @@
 #define FUTURE_RETURN(ctx, rslt) do { ctx.setResult(rslt); return; } while (0)
 
 namespace core { namespace async {
-
     class IFuture {
     public:
         virtual bool runSlice() = 0;
@@ -66,6 +65,7 @@ namespace core { namespace async {
     template<typename TData, typename TResult>
     class Future : public IFuture {
     public:
+
         Future(TData data, etl::delegate<void(FutureContext<TData, TResult>&)> sliceFunc) :
             _context(data, sliceFunc) { }
 
@@ -127,5 +127,16 @@ namespace core { namespace async {
     private:
         FutureContext<TData, TResult> _context;
     };
+
+    template<typename T, void (T::*methodName)(void)>
+    static core::shared_ptr<IFuture> _futureFromMember(T* instance) {
+        auto backgroundTaskDelegate
+                = etl::delegate<void(async::FutureContext<T*, void*>&)>::create([](async::FutureContext<T*, void*> ctx) {
+                    (ctx.getData()->*methodName)();
+                });
+        return core::shared_ptr<IFuture>(new Future(instance, backgroundTaskDelegate));
+    }
+
+#define FUTURE_FROM_MEMBER(classname, methodname) core::async::_futureFromMember<classname, &classname::methodname>(this)
 }}
 #endif //SGLOGGER_FUTURE_H

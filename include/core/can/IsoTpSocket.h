@@ -57,7 +57,7 @@ namespace core { namespace can {
         shared_ptr<async::IFuture> _backgroundWorkerTask;
     };
 }}
-
+namespace core { namespace can {
 static inline core::can::ICanInterface* _core_can_isotp_glue_iface = nullptr;
 static inline core::can::IsoTpSocket* _core_can_isotp_glue_socket = nullptr;
 static inline canid_t _core_can_isotp_glue_txid = 0;
@@ -76,6 +76,7 @@ static inline void core_can_isotp_glue_deinit(core::can::IsoTpSocket* socket) {
     if (_core_can_isotp_glue_socket == socket) {
         _core_can_isotp_glue_socket = nullptr;
         _core_can_isotp_glue_iface = nullptr;
+        _core_can_isotp_glue_received.clear();
     }
 }
 
@@ -105,7 +106,7 @@ extern "C" {
         // ignore for now...
     }
 }
-namespace core { namespace can {
+
     IsoTpSocket::IsoTpSocket(core::async::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId) : _can(canInterface) {
         iso15765_t handler = createIsoTpHandler();
         _isotp = handler;
@@ -159,13 +160,12 @@ namespace core { namespace can {
         if (!available())
             return false;
         _core_can_isotp_glue_received.pop(outPacket);
-        //_bufferedPayload -= outPacket.length();
         return true;
     }
 
     void IsoTpSocket::backgroundReceive()  {
         CanFrame f;
-        if (_can.tryReadFrame(f) && f.id == _core_can_isotp_glue_rxid) {
+        if (_can.tryReadFrame(f) /* && f.id == _core_can_isotp_glue_rxid */ ) {
             canbus_frame_t cf;
             cf.id_type = CBUS_ID_T_STANDARD;
             cf.fr_format = CBUS_FR_FRM_STD;
@@ -177,11 +177,12 @@ namespace core { namespace can {
     }
 
     void IsoTpSocket::startBackgroundWorker(async::IDispatcher &dispatcher) {
-        etl::delegate<void(async::FutureContext<IsoTpSocket*, void*>&)> backgroundTaskDelegate;
-        backgroundTaskDelegate.set([=](async::FutureContext<IsoTpSocket*, void*> ctx) {
-            ctx.getData()->backgroundReceive();
-            iso15765_process(&_isotp);
-        });
+
+        etl::delegate<void(async::FutureContext<IsoTpSocket*, void*>&)> backgroundTaskDelegate
+         = etl::delegate<void(async::FutureContext<IsoTpSocket*, void*>&)>::create([](async::FutureContext<IsoTpSocket*, void*> ctx) {
+                    ctx.getData()->backgroundReceive();
+                    iso15765_process(&(ctx.getData()->_isotp));
+                });
 
         _backgroundWorkerTask = shared_ptr<async::IFuture>(new async::Future<IsoTpSocket*, void*>(this, backgroundTaskDelegate));
         dispatcher.run(_backgroundWorkerTask);

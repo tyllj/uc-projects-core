@@ -12,7 +12,7 @@
 #include "core/Sleep.h"
 
 namespace core { namespace cli {
-    template <size_t bufferLength>
+    template <size_t bufferLength = 80, cstrings::NewLineMode newLineMode = cstrings::NewLineMode::CRLF>
     class LineEditor {
     public:
         LineEditor(
@@ -40,6 +40,14 @@ namespace core { namespace cli {
 
         void clear() {
             discardLineBuffer();
+        }
+
+        void echoOn() {
+            _echoToTerminal = true;
+        }
+
+        void echoOff() {
+            _echoToTerminal = false;
         }
 
     private:
@@ -160,8 +168,10 @@ namespace core { namespace cli {
         }
 
         void carriageReturn() {
-            terminalPut(CR);
-            terminalPut(LF);
+            if (_echoToTerminal && (newLineMode == cstrings::NewLineMode::CR || newLineMode == cstrings::NewLineMode::CRLF))
+                terminalPut(CR);
+            if (_echoToTerminal && (newLineMode == cstrings::NewLineMode::LF || newLineMode == cstrings::NewLineMode::CRLF))
+                terminalPut(LF);
             _isReturn = true;
         }
 
@@ -202,10 +212,12 @@ namespace core { namespace cli {
         }
 
         void printBufferFromCursor() {
-            for (int i = _cursor; i < _lineEnd; i++)
-                terminalPut(_lineBuffer[i]);
+            if (_echoToTerminal) {
+                for (int i = _cursor; i < _lineEnd; i++)
+                    terminalPut(_lineBuffer[i]);
 
-            terminalCursorBack(_lineEnd - _cursor);
+                terminalCursorBack(_lineEnd - _cursor);
+            }
         }
         void cursorBack() {
             if (isCursorAtLineStart())
@@ -227,8 +239,10 @@ namespace core { namespace cli {
         }
 
         void terminalCursorForward(uint8_t n) {
+
             for (int i = 0; i < n; i++)
                 terminalControlSequence("1C");
+
         }
 
         bool isCursorAtLineStart() {
@@ -244,9 +258,11 @@ namespace core { namespace cli {
         }
 
         void terminalControlSequence(const char* expr) {
-            terminalPut(ESC);
-            terminalPut('[');
-            _output.write(expr);
+            if (_echoToTerminal) {
+                terminalPut(ESC);
+                terminalPut('[');
+                _output.write(expr);
+            }
         }
 
         void terminalPut(const uint8_t c) {
@@ -271,6 +287,7 @@ namespace core { namespace cli {
         bool _isControlSequence = false;
         int32_t _controlSequenceArgument = 0;
         bool _isReturn = false;
+        bool _echoToTerminal = true;
     };
 }}
 

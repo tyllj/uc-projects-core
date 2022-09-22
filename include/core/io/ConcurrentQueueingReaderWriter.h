@@ -17,7 +17,7 @@ namespace core { namespace io {
     class ConcurrentQueueingReaderWriter : public TextWriter, public TextReader {
     public:
 
-        void write(const unsigned char c) final {
+        void write(char c) final {
             LockGuard _(_mtx);
             _queue.writeByte(c);
         }

@@ -12,7 +12,7 @@
 namespace core { namespace io {
         class ConsoleWriter : public TextWriter {
         public:
-            void write(const unsigned char c) final {
+            void write(char c) final {
                 putchar(c);
             }
             virtual void write(const  char* str) final {
