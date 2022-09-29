@@ -26,10 +26,6 @@ inline uint64_t millis() {
 	return g_millis;
 }
 
-inline uint64_t millisPassedSince(uint64_t timestamp) {
-	return millis() - timestamp;
-}
-
 inline void sleepms(uint64_t delay) {
 	uint64_t now = millis();
 	while (millisPassedSince(now) < delay);

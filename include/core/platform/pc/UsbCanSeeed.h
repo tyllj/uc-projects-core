@@ -15,7 +15,7 @@
 #include "core/Bits.h"
 
 namespace core { namespace can {
-    constexpr uint32_t USBCAN_SERIAL_BAUD = 2000000;
+    constexpr int32_t USBCAN_SERIAL_BAUD = 2000000;
 
     core::CString UsbCanSeeedAutodetectPath() {
         return core::io::ports::usb::findCh340();

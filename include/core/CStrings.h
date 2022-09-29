@@ -19,7 +19,7 @@ namespace core {
 namespace core { namespace cstrings {
 
     template<size_t n>
-    inline void copy(char (&destination)[n], const char* source) {
+    inline void copyTo(char (&destination)[n], const char* source) {
         strncpy(reinterpret_cast<char *>(&destination), source, n);
     }
 
@@ -47,7 +47,7 @@ namespace core { namespace cstrings {
         return c;
     }
 
-    inline void trim(char* destination, const char* source) {
+    inline void removeWhitespaces(char* destination, const char* source) {
         while (*source != '\0') {
             if(!isspace(*source)) {
                 *destination = *source;
@@ -58,8 +58,8 @@ namespace core { namespace cstrings {
         *destination = '\0';
     }
 
-    inline void trim(char* inplace) {
-        trim(inplace, inplace);
+    inline void removeWhitespaces(char* inplace) {
+        removeWhitespaces(inplace, inplace);
     }
 
     inline void toUpper(char * destination, const char* source) {
@@ -174,8 +174,37 @@ namespace core { namespace cstrings {
         return result;
     }
 
+    inline void empty(char* str) {
+        str[0] = '\0';
+    }
+
     inline const char* empty() {
         return "";
+    }
+
+    template<typename TFunctor>
+    inline bool any(const char* str, TFunctor predicate) {
+        while (*str) {
+            if (predicate(*str))
+                return true;
+            str++;
+        }
+        return false;
+    }
+
+    template<typename TFunctor>
+    inline bool all(const char* str, TFunctor predicate) {
+        while (*str) {
+            if (!predicate(*str))
+                return false;
+            str++;
+        }
+        return true;
+    }
+
+
+    inline bool contains(const char* haystack, char needle) {
+        return any(haystack, [=](char c) { return c == needle; });
     }
 
     enum NewLineMode {

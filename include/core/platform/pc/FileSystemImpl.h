@@ -17,12 +17,12 @@
 #include "core/io/Stream.h"
 
 namespace core { namespace io {
-    class NativeFileStream : public Stream {
+    class UnixFileStream : public Stream {
     public:
-        NativeFileStream(const char* path, core::io::FileMode mode) {
+        UnixFileStream(const char* path, core::io::FileMode mode) {
             _file = fopen(path, fileModeToString(mode));
         }
-        ~NativeFileStream() {
+        ~UnixFileStream() {
             flush();
             close();
         }
@@ -83,7 +83,7 @@ namespace core { namespace io {
     class NativeFileSystem : public FileSystem {
     public:
         core::shared_ptr<Stream> open(const char* path, core::io::FileMode mode) final {
-            return core::shared_ptr<Stream>(new NativeFileStream(path, mode));
+            return core::shared_ptr<Stream>(new UnixFileStream(path, mode));
         };
 
         bool exists(const char* path) const final {

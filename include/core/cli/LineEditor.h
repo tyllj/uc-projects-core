@@ -9,7 +9,7 @@
 #include "core/cli/AnsiCharacters.h"
 #include "core/io/TextReader.h"
 #include "core/io/TextWriter.h"
-#include "core/Sleep.h"
+#include "core/Tick.h"
 
 namespace core { namespace cli {
     template <size_t bufferLength = 80, cstrings::NewLineMode newLineMode = cstrings::NewLineMode::CRLF>

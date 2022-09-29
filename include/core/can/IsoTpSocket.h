@@ -6,11 +6,11 @@
 #define SGLOGGER_ISOTPSOCKET_H
 
 #include "ICanInterface.h"
-#include "core/Sleep.h"
+#include "core/Tick.h"
 #include "iso15765-canbus/src/lib_iso15765.h"
 #include "etl/queue_spsc_atomic.h"
 #include "core/shared_ptr.h"
-#include "core/async/Future.h"
+#include "core/coop/Future.h"
 
 #ifndef UC_CORE_ISOTP_QUEUE_SIZE
 #define UC_CORE_ISOTP_QUEUE_SIZE 8
@@ -21,9 +21,11 @@ namespace core { namespace can {
     public:
         IsoTpPacket() : _length(0), _data(core::unique_ptr<uint8_t[]>()) {}
 
-        explicit IsoTpPacket(size_t length) : _length(length),  _data(core::unique_ptr<uint8_t[]>(new uint8_t[length])) {
+        explicit IsoTpPacket(canid_t canid, size_t length) : _canid(canid), _length(length), _data(core::unique_ptr<uint8_t[]>(new uint8_t[length])) {
 
         }
+
+        inline canid_t canid() { return _canid; }
 
         inline size_t length() { return _length; }
 
@@ -32,6 +34,7 @@ namespace core { namespace can {
         }
 
     private:
+        canid_t _canid;
         size_t _length;
         core::unique_ptr<uint8_t[]> _data;
     };
@@ -39,7 +42,7 @@ namespace core { namespace can {
     class IsoTpSocket {
     public:
 
-        IsoTpSocket(core::async::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId);
+        IsoTpSocket(core::coop::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId);
         IsoTpSocket(IsoTpSocket& socket) = delete;
         IsoTpSocket(IsoTpSocket&& socket);
         ~IsoTpSocket();
@@ -48,13 +51,13 @@ namespace core { namespace can {
         bool tryReceive(IsoTpPacket& outPacket) const;
     private:
         iso15765_t createIsoTpHandler() const;
-        void startBackgroundWorker(core::async::IDispatcher &dispatcher);
+        void startBackgroundWorker(core::coop::IDispatcher &dispatcher);
         void backgroundReceive();
 
     private:
         ICanInterface& _can;
         iso15765_t _isotp;
-        shared_ptr<async::IFuture> _backgroundWorkerTask;
+        shared_ptr<coop::IFuture> _backgroundWorkerTask;
     };
 }}
 namespace core { namespace can {
@@ -93,7 +96,12 @@ extern "C" {
     }
 
     static inline void core_can_isotp_glue_iface_usdata_indication(n_indn_t* info) {
-        core::can::IsoTpPacket p(info->msg_sz);
+        canid_t id = 0x80
+                          | info->n_ai.n_pr << 8
+                          | info->n_ai.n_ta << 3
+                          | info->n_ai.n_sa
+                          | (info->n_ai.n_tt == N_TA_T_PHY ? 0x40U : 0x00U);
+        core::can::IsoTpPacket p(id, info->msg_sz);
         memcpy(p.getData(), info->msg, p.length());
         _core_can_isotp_glue_received.push(etl::move(p));
     }
@@ -107,7 +115,7 @@ extern "C" {
     }
 }
 
-    IsoTpSocket::IsoTpSocket(core::async::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId) : _can(canInterface) {
+    IsoTpSocket::IsoTpSocket(core::coop::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId) : _can(canInterface) {
         iso15765_t handler = createIsoTpHandler();
         _isotp = handler;
         core_can_isotp_glue_init(this, &_can, txId, rxId);
@@ -176,15 +184,15 @@ extern "C" {
         }
     }
 
-    void IsoTpSocket::startBackgroundWorker(async::IDispatcher &dispatcher) {
+    void IsoTpSocket::startBackgroundWorker(coop::IDispatcher &dispatcher) {
 
-        etl::delegate<void(async::FutureContext<IsoTpSocket*, void*>&)> backgroundTaskDelegate
-         = etl::delegate<void(async::FutureContext<IsoTpSocket*, void*>&)>::create([](async::FutureContext<IsoTpSocket*, void*> ctx) {
+        etl::delegate<void(coop::FutureContext<IsoTpSocket*, void*>&)> backgroundTaskDelegate
+         = etl::delegate<void(coop::FutureContext<IsoTpSocket*, void*>&)>::create([](coop::FutureContext<IsoTpSocket*, void*> ctx) {
                     ctx.getData()->backgroundReceive();
                     iso15765_process(&(ctx.getData()->_isotp));
                 });
 
-        _backgroundWorkerTask = shared_ptr<async::IFuture>(new async::Future<IsoTpSocket*, void*>(this, backgroundTaskDelegate));
+        _backgroundWorkerTask = shared_ptr<coop::IFuture>(new coop::Future<IsoTpSocket*, void*>(this, backgroundTaskDelegate));
         dispatcher.run(_backgroundWorkerTask);
     }
 }}

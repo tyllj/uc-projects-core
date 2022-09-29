@@ -25,35 +25,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-// ----------------------------- krotki opis ------------------
-
-// Biblioteka obs³uguje mniej lub bardziej zgodnie:
-//
-// cgets()
-// cputs()
-// clreol()
-// clrscr()
-// cprintf()
-// cscanf()
-// getch() (chyba nie wszystkie kody tak jak w conio.h)
-// getche()
-// gotoxy()
-// kbhit()
-// putch()
-// textbackground()
-// textcolor()
-// wherex()
-// wherey()
-// window()
-//
-// kompatbyilno¶æ w kierunku Linux CONIO.H -> DOS CONIO.H
-// bedzie zachowana
-
-// Aby skompilowac
-// $g++ nazwa_progsa.cpp -lncurses -o nazwa_progsa.o
-
-// ------------------------------- define ---------------------
-
 #ifndef __NCURSES_H
 #include <ncurses.h>
 #endif
@@ -84,10 +55,6 @@
 #define LIGHTCYAN   6
 #define WHITE       7
 
-// -------------------------------- globalne ------------------
-
-//int (* wsk_f)(void) = getch;
-
 #undef getch
 #define getch CURSgetch
 
@@ -95,13 +62,15 @@
 #define getche CURSgetche
 
 
-void inicjuj();
+void initConio();
 
-class Startuj   // konstruktor i destruktor klasy beda odpowiedzalni
-{	public:     // za automagiczna inicjalizacje ustawien ;-)
-    Startuj(){ inicjuj(); }
-    ~Startuj(){ endwin(); }
-} Start;	    			// inicjuj!
+class ConioWrapper
+{	public:
+    ConioWrapper(){ initConio(); }
+    ~ConioWrapper(){ endwin(); }
+};
+
+inline ConioWrapper conioWrapper;
 
 typedef struct
 {
@@ -109,72 +78,61 @@ typedef struct
     int 	yup;
     int 	xdown;
     int 	ydown;
-    WINDOW*	okno;
-} Okno;
+    WINDOW*	nc_window;
+} Window;
 
-bool	zainicjowane = FALSE; //czy juz po initscr() ?
-int	znakSpecjalny = -1; //potrzebne do getch'a
+bool	conioInitialized = FALSE; //czy juz po initscr() ?
+int	wideCharacter = -1; //potrzebne do getch'a
 int	n = 0; //liczba uzytych okienek
 
-short	kolorTekstu = COLOR_WHITE;
-short	kolorTla = COLOR_BLACK;
-short	biezacaPara;
+short	foregroundColor = COLOR_WHITE;
+short	backgroundColor = COLOR_BLACK;
+short	currentColorPair;
 
-Okno	okienka[MAX_OKIEN];	//tablica struktur aktywnych okienek
-WINDOW*	aktywneOkno = NULL;	//wsk na aktywne okno
+Window	windows[MAX_OKIEN];
+WINDOW*	activeWindow = NULL;
 
 
 
 // ----------------------------- koniec globalnych ------------
 
-void inicjuj()
+void initConio()
 {
     initscr();
-    start_color(); //wlaczmy kolorki
-    cbreak(); //wylaczmy buforowanie wejscia
-    noecho(); //bez wyswietlania na ekran
-    //raw(); //nadpisywane i tak przez noecho
+    start_color();
+    cbreak();
+    noecho();
     keypad(stdscr, TRUE);
     scrollok(stdscr, TRUE);
 
-    //domyslne okno
-    aktywneOkno = stdscr;
-    zainicjowane = TRUE;
+    activeWindow = stdscr;
+    conioInitialized = TRUE;
 
-    //utworzmy macierz 8x8 kolorow tla i tekstu
     short kolor = 1;
-    for(short i=0; i<8; i++)
-    {
-        for(short j=0; j<8; j++, kolor++)
-        {
+    for(short i=0; i<8; i++) {
+        for(short j=0; j<8; j++, kolor++) {
             init_pair(kolor,i,j);
-            if(i == COLOR_WHITE && j == COLOR_BLACK)
-                //ustawmy czarne tlo i bialey tekst jako standard
-            {
-                biezacaPara = kolor;
+            if(i == COLOR_WHITE && j == COLOR_BLACK) {
+                currentColorPair = kolor;
             }
         }
     }
 
-    wrefresh(aktywneOkno);
+    wrefresh(activeWindow);
 }
 
-int simple_strlen(char* str)
-{
+int simple_strlen(char* str) {
     char* p;
     for(p = str; *p != 0; p++);
     return p-str;
 }
 
-void cputs(char* str)
-{
-    waddstr(aktywneOkno, str);
-    wrefresh(aktywneOkno);
+void cputs(char* str) {
+    waddstr(activeWindow, str);
+    wrefresh(activeWindow);
 }
 
-char* cgets(char* str)
-{ // nie wiem dokladnie jak dziala orginalna f. cgets bo nie mam
-    // do niej referencji..
+char* cgets(char* str) {
     if(str == NULL || *str == 0)
     {
         *(str+1) = 0;
@@ -185,7 +143,7 @@ char* cgets(char* str)
 
     echo();
 
-    if(wgetnstr(aktywneOkno, (str + 2), max) == ERR)
+    if(wgetnstr(activeWindow, (str + 2), max) == ERR)
     {
         *(str+1) = 0;
         return NULL;
@@ -198,233 +156,190 @@ char* cgets(char* str)
     return str+2;
 }
 
-void clreol()
-{
-    wclrtoeol(aktywneOkno);
-    wrefresh(aktywneOkno);
+void clreol() {
+    wclrtoeol(activeWindow);
+    wrefresh(activeWindow);
 }
 
-void clrscr()
-{
-    if(!zainicjowane) inicjuj();
-    wbkgd(aktywneOkno, COLOR_PAIR(biezacaPara));
+void clrscr() {
+    if(!conioInitialized) initConio();
+    wbkgd(activeWindow, COLOR_PAIR(currentColorPair));
     //trzeba przesunac kursor? chyba nie...
-    wclear(aktywneOkno);
+    wclear(activeWindow);
 }
 
-int cprintf(char *fmt, ...)
-// czysty hardcore ;-)
-{
-    if(!zainicjowane) inicjuj();
+int cprintf(char *fmt, ...) {
+    if(!conioInitialized) initConio();
 
     va_list ap;
     va_start(ap, fmt);
 
 
-    int i = vwprintw(aktywneOkno,fmt, ap);	//jakie proste ;-)
+    int i = vwprintw(activeWindow, fmt, ap);
 
     va_end(ap);
 
-    wrefresh(aktywneOkno);
+    wrefresh(activeWindow);
 
     return i;
 }
 
-int cscanf(char *fmt, ...)
-{
-    if(!zainicjowane) inicjuj();
+int cscanf(char *fmt, ...) {
+    if(!conioInitialized) initConio();
 
     echo();
 
     va_list ap;
     va_start(ap, fmt);
 
-    int i = vwscanw(aktywneOkno, fmt, ap);
+    int i = vwscanw(activeWindow, fmt, ap);
 
     va_end(ap);
 
-    wrefresh(aktywneOkno);
+    wrefresh(activeWindow);
     noecho();
 
     return i;
 }
 
-int CURSgetch()
-{
-    if(!zainicjowane) inicjuj();
+int CURSgetch() {
+    if(!conioInitialized) initConio();
 
-    int znak;
+    int character;
 
-    if(znakSpecjalny>0) //drugi czlon znaku specjalnego 0x00 i 0x??
-    {
-        //zamieniamy znak na kod DOSowy - conio.h
-        znak = znakSpecjalny;
-        znakSpecjalny = -1;
+    if(wideCharacter > 0) {
+        character = wideCharacter;
+        wideCharacter = -1;
 
-        return znak-265+59;
+        return character - 265 + 59;
     }
 
-    znak = wgetch(aktywneOkno);
+    character = wgetch(activeWindow);
 
-    if(znak > 255) //to mamy znak specjalny 0x00
+    if(character > 255)
     {
-        znakSpecjalny = znak;
+        wideCharacter = character;
         return 0;
     }
 
-    return znak;
+    return character;
 }
 
-int CURSgetche()
-{
+int CURSgetche() {
     echo();
-    int znak = getch();
+    int character = getch();
     noecho();
-    return znak;
+    return character;
 }
 
-int gotoxy(int x, int y)
-{
-    if(!zainicjowane) inicjuj();
-    wmove(aktywneOkno, y - 1, x - 1);
+int gotoxy(int x, int y) {
+    if(!conioInitialized) initConio();
+    wmove(activeWindow, y - 1, x - 1);
     return 0;
 }
 
-int kbhit()
-{
-    int znak;
-    wtimeout(aktywneOkno, 0);
-    znak = wgetch(aktywneOkno);
-    //wtimeout(aktywneOkno, -1);
-    nodelay(aktywneOkno, FALSE);
-    if (znak == ERR) return 0;
-    ungetch(znak);
+int kbhit() {
+    int character;
+    wtimeout(activeWindow, 0);
+    character = wgetch(activeWindow);
+    nodelay(activeWindow, FALSE);
+    if (character == ERR) return 0;
+    ungetch(character);
     return 1;
 }
 
-int putch(int znak)
-{
-    return wechochar(aktywneOkno,znak);
+int putch(int character) {
+    return wechochar(activeWindow, character);
 }
 
-void textbackground(short kolor)
-{
-    if(!zainicjowane) inicjuj();
-    kolorTla = kolor%8;
+void textbackground(short color) {
+    if(!conioInitialized) initConio();
+    backgroundColor = color % 8;
     short k=1;
-    for(short i=0; i<8; i++) //wyszukajmy numer pary dla kolorow
-    {
-        for(short j=0; j<8; j++, k++)
-        {
-            if(kolorTekstu == i && kolorTla == j)
-            {
-                biezacaPara = k;
-                wbkgd(aktywneOkno, COLOR_PAIR(k));
+    for(short i=0; i<8; i++) {
+        for(short j=0; j<8; j++, k++) {
+            if(foregroundColor == i && backgroundColor == j) {
+                currentColorPair = k;
+                wbkgd(activeWindow, COLOR_PAIR(k));
             }
         }
     }
 
-    wrefresh(aktywneOkno);
+    wrefresh(activeWindow);
 }
 
-void textcolor(short kolor)
-{
-    if(!zainicjowane) inicjuj();
-    kolorTekstu = kolor%8;
+void textcolor(short color) {
+    if(!conioInitialized) initConio();
+    foregroundColor = color % 8;
 
     short k=1;
-    for(short i=0; i<8; i++) //wyszukajmy numer pary dla kolorow
-    {
-        for(short j=0; j<8; j++, k++)
-        {
-            if(kolorTekstu == i && kolorTla == j)
+    for(short i=0; i<8; i++) {
+        for(short j=0; j<8; j++, k++) {
+            if(foregroundColor == i && backgroundColor == j)
             {
-                biezacaPara = k;
-                wcolor_set(aktywneOkno,k, NULL);
+                currentColorPair = k;
+                wcolor_set(activeWindow, k, NULL);
             }
         }
     }
 
-    wrefresh(aktywneOkno);
+    wrefresh(activeWindow);
 }
 
-int wherex(void)
-{
-    if(!zainicjowane) inicjuj();
+int wherex(void) {
+    if(!conioInitialized) initConio();
     int x, y;
-    getyx(aktywneOkno, y, x);
+    getyx(activeWindow, y, x);
     return x + 1;
 }
 
-int wherey(void)
-{
-    if(!zainicjowane) inicjuj();
+int wherey(void) {
+    if(!conioInitialized) initConio();
     int x, y;
-    getyx(aktywneOkno, y, x);
+    getyx(activeWindow, y, x);
     return y + 1;
 }
 
-void window(int xup, int yup, int xdown, int ydown)
-{
-    if( xup<1 || yup<1 || xdown>COLS || ydown>LINES)
-    { //jesli zle dane podano...
+void window(int xup, int yup, int xdown, int ydown) {
+    if( xup<1 || yup<1 || xdown>COLS || ydown>LINES) {
         xdown = COLS - xup;
         ydown = LINES - yup;
-        //return;
     }
 
-    bool istnieje = FALSE;
+    bool exists = FALSE;
 
-    if(!zainicjowane) inicjuj();
+    if(!conioInitialized) initConio();
 
-    /*
-    Istnieje alternatywne rozwiazanie tworzenia nowych okien,
-    w momencie tworzenia nowego okna, usuwa sie okno poprzednie,
-    tzn zwalnia pamiec tego okna, komenda delwin(nzw_okna) i tworzy
-    sie nowe okno, ustawiajac jego jako domyslne-biezace. Jednak
-    poniewaz moze to zabierac za duzo czasu i niepotrzebnie spowolniac,
-    majac na uwadze rozmiar dzisiejszych pamieci, postanowilem, uzyc
-    tablicy, ktora przechowywuje wsk. na adresy okien i wykorzystuje
-    zaalokowana juz przestrzen. Aczkolwiek mozna to w kazdej chwili zmienic.
-    */
-
-    for(int i=0; i<n && !istnieje; i++) //sprawdzimy czy podane okno juz nie
-        // zostalo wczesniej stworzone
-    {
-        if( okienka[i].xup == xup && okienka[i].yup == yup
-            && okienka[i].xdown == xdown && okienka[i].ydown == ydown)
-        {
-            aktywneOkno = okienka[i].okno;
-            istnieje = TRUE;
+    for(int i=0; i<n && !exists; i++) {
+        if(windows[i].xup == xup && windows[i].yup == yup
+           && windows[i].xdown == xdown && windows[i].ydown == ydown) {
+            activeWindow = windows[i].nc_window;
+            exists = TRUE;
             clrscr();
         }
     }
 
-    if(!istnieje && n < MAX_OKIEN) //jesli nie ma takiego okna to tworzymy je
-    {
-        aktywneOkno = newwin(ydown - yup + 1, xdown - xup + 1, yup - 1, xup - 1);
-        //nie dam glowy czy dokladnie tak wyswietla conio.h
+    if(!exists && n < MAX_OKIEN) {
+        activeWindow = newwin(ydown - yup + 1, xdown - xup + 1, yup - 1, xup - 1);
 
-        //do tablicy zapisac...
-        okienka[n].okno = aktywneOkno;
-        okienka[n].xup = xup;
-        okienka[n].yup = yup;
-        okienka[n].xdown = xdown;
-        okienka[n].ydown = ydown;
+        windows[n].nc_window = activeWindow;
+        windows[n].xup = xup;
+        windows[n].yup = yup;
+        windows[n].xdown = xdown;
+        windows[n].ydown = ydown;
 
-        wcolor_set(aktywneOkno,biezacaPara, NULL);
-        wbkgd(aktywneOkno, COLOR_PAIR(biezacaPara));
+        wcolor_set(activeWindow, currentColorPair, NULL);
+        wbkgd(activeWindow, COLOR_PAIR(currentColorPair));
 
-        //przywrocenie ustawien klawiszy
-        cbreak(); //wylaczmy buforowanie wejscia
-        noecho(); //bez wyswietlania na ekran
-        keypad(aktywneOkno, TRUE); //pelne kody klawiszy
-        scrollok(aktywneOkno, TRUE);
+        cbreak();
+        noecho();
+        keypad(activeWindow, TRUE);
+        scrollok(activeWindow, TRUE);
 
         n++;
     }
 
-    wrefresh(aktywneOkno);
+    wrefresh(activeWindow);
 
     return;
 }

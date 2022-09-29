@@ -11,7 +11,9 @@
 #include "core/io/StreamWriter.h"
 #include "core/Convert.h"
 #include "core/shared_ptr.h"
-#include "core/async/Future.h"
+#include "core/coop/Future.h"
+#include "core/StringBuilder.h"
+#include "core/Tick.h"
 
 namespace core { namespace can { namespace elm {
     class ElmCommandInterpreter {
@@ -22,14 +24,15 @@ namespace core { namespace can { namespace elm {
         };
 
     public:
-        ElmCommandInterpreter(core::async::IDispatcher& dispatcher, core::io::Stream& tty, ICanInterface &can)
+        ElmCommandInterpreter(core::coop::IDispatcher& dispatcher, core::io::Stream& tty, ICanInterface &can)
                 :
                 _dispatcher(dispatcher),
                 _in(tty),
                 _out(tty),
-                _prompt(_in, _out),
+                _prompt(_input),
                 _can(can) {
             _out.setNewLine(core::cstrings::NewLineMode::CR);
+            while(tty.readByte() != -1); // flush receive buffer
             startBackgroundWorker(_dispatcher);
         }
 
@@ -39,7 +42,7 @@ namespace core { namespace can { namespace elm {
         }
 
     private:
-        void startBackgroundWorker(async::IDispatcher &dispatcher) {
+        void startBackgroundWorker(coop::IDispatcher &dispatcher) {
             beginAcceptInput();
             _backgroundWorkerTask = FUTURE_FROM_MEMBER(ElmCommandInterpreter, process);
             dispatcher.run(_backgroundWorkerTask);
@@ -63,27 +66,129 @@ namespace core { namespace can { namespace elm {
         }
 
         void continueAcceptInput() {
-            if (_prompt.accept()) {
-                dispatchCommand(_prompt.getBuffer());
+            char c;
+            if ((c = _in.read()) != -1) {
+                _prompt.append(c);
+                if (_config.isEchoOn)
+                    _out.write(c);
             }
+            if (c == CR) {
+                dispatchCommand(_prompt.toCString());
+                _prompt.clear();
+                if (_state == READY)
+                    beginAcceptInput();
+            }
+        }
+
+        uint64_t getTimeout() {
+            return _config.timeoutMultiplier * 4;
         }
 
         void beginReceive() {
             // setup iso-tp socket
+            _bytesReceived = false;
+            _startedReceiving = millis();
             _state = BUSY;
         }
 
         void continueReceive() {
             if (_in.read() != -1) {
+                _out.writeLine("STOPPED");
                 endReceive();
                 return;
+            }
+            if (millis() - _startedReceiving > getTimeout()) {
+                if (!_bytesReceived)
+                    _out.writeLine("NO DATA");
+                endReceive();
+                return;
+            }
+
+            if (_config.isAutoFormattingOn) {
+                IsoTpPacket p;
+                if (_isotp->tryReceive(p)) {
+                    printMessageFormatted(p.canid(), p.getData(), p.length());
+                    endReceive();
+                }
+            } else {
+                CanFrame f;
+                if (_can.tryReadFrame(f)) {
+                    printMessageRaw(f.id, f.payload, f.length);
+                    _bytesReceived = true;
+                }
+            }
+        }
+
+        void printMessageRaw(canid_t sender, uint8_t* bytes, size_t length) {
+            char byteString[3] = { 0x00 };
+            if (_config.isHeadersOn) {
+                // print sender 
+            }
+            for (uint8_t i = 0; i < length; i++) {
+                convert::toHexString(bytes++, 1, byteString);
+                cstrings::toUpper(byteString);
+                _out.write(byteString);
+                if (_config.isSpacesOn && i < length + 1)
+                    _out.write(' ');
+            }
+            _out.writeLine();
+        }
+
+        void printMessageFormatted(canid_t sender, uint8_t* bytes, size_t length) {
+            if (length < 7) { // single line response, treat as raw
+                printMessageRaw(sender, bytes, length);
+                return;
+            }
+
+
+            if (_config.isHeadersOn) {
+                // Not supported now
+            } else {
+
             }
         }
 
         void endReceive() {
             // teardown iso-tp socket, clear queues.
-
+            if (_isotp.has_value())
+                deinitIsoTp();
             beginAcceptInput();
+        }
+
+        void sendToVehicle(const char* hexData) {
+            switch (_config.protocol) {
+                case 1:
+                case 2:
+                    respond("FB ERROR");
+                    return;
+                case 3:
+                case 4:
+                case 5:
+                    respond(_config.bypassInit ? "BUS ERROR" : "BUS INIT: BUS ERROR");
+                    return;
+                case 6:
+                    break;
+                default:
+                    respond("CAN ERROR");
+                    return;
+            }
+
+
+            uint8_t message[32] = { 0x00 };
+            size_t dlc = convert::fromHexString(hexData, message);
+
+            if(_config.isAutoFormattingOn) {
+                initIsoTp();
+                _isotp->send(message, dlc);
+            } else {
+                CanFrame f;
+                f.id = _config.transmitAddress;
+                f.length = 8;
+                memcpy(f.payload, message, f.length);
+                _can.writeFrame(f);
+            }
+
+            beginReceive();
         }
 
         void printVersion(const char* param) {
@@ -91,10 +196,12 @@ namespace core { namespace can { namespace elm {
         }
 
         void warmStart(const char* param) {
+            _config = ElmRuntimeConfiguration();
             respond(ELM_VERSION_STRING);
         }
 
         void resetAll(const char* param) {
+            _config = ElmRuntimeConfiguration();
             respond(ELM_VERSION_STRING);
         }
 
@@ -104,13 +211,11 @@ namespace core { namespace can { namespace elm {
 
         void echoOn(const char* param) {
             _config.isEchoOn = true;
-            _prompt.echoOn();
             respondOk();
         }
 
         void echoOff(const char* param) {
             _config.isEchoOn = false;
-            _prompt.echoOff();
             respondOk();
         }
 
@@ -196,20 +301,33 @@ namespace core { namespace can { namespace elm {
         }
 
         void tryProtocol(const char* param) {
-            // Assert protocol is 6 (CAN, ISO 15765-4, 11 bit ID, 500 kbaud), because other protocols are not supported atm.
-            if (core::cstrings::equals(param, "6")
-                    || core::cstrings::equals(param, "0"))
-                respondOk();
-            else
-                respond("BUS INIT: BUS ERROR");
+
+            if (cstrings::length(param) != 1 ||
+                    !cstrings::all(param, [](char c) { return cstrings::contains("0123456789ABC", c); })) {
+                respondUnkown();
+                return;
+            }
+
+            _config.protocol = convert::toUInt8(param, 16);
+            respondOk();
+        }
+
+        void bypassInit(const char* param) {
+            _config.bypassInit = true;
+            respondOk();
         }
 
         void allowLongMessages(const char* param) {
             respondOk();
         }
 
+        void normalLengthMessages(const char* param) {
+            respondOk();
+        }
+
         void setHeader(const char* param) {
             _config.transmitAddress = core::convert::toUInt16(param, 16);
+            respondOk();
         }
 
         void setCanReceiveAddress(const char* param) {
@@ -217,6 +335,7 @@ namespace core { namespace can { namespace elm {
             _can.filter(_config.filterId);
             _config.maskId = CANID_11_MAX;
             _can.mask(_config.maskId);
+            respondOk();
         }
 
         void protocolClose(const char* param) {
@@ -243,16 +362,13 @@ namespace core { namespace can { namespace elm {
 
             const char* param;
 
-            cstrings::copy(_command, input);
-            cstrings::trim(_command);
+            cstrings::removeWhitespaces(_command, input);
             cstrings::toUpper(_command);
 
-            if (!cstrings::startsWith(_command, "AT")) {
-                // handle as raw data, send to can or isotp
-                return;
+            if (cstrings::all(_command, [](char c) { return cstrings::contains("0123456789ABCDEF", c); })) {
+                sendToVehicle(_command);
             }
-
-            if (isCommand(_command, "ATRV", &param))
+            else if (isCommand(_command, "ATRV", &param))
                 readInputVoltage(param);
             else if (isCommand(_command, "ATSH", &param))
                 setHeader(param);
@@ -296,6 +412,10 @@ namespace core { namespace can { namespace elm {
                 tryProtocol(param);
             else if (isCommand(_command, "ATAL", &param))
                 allowLongMessages(param);
+            else if (isCommand(_command, "ATNL", &param))
+                normalLengthMessages(param);
+            else if (isCommand(_command, "ATAT", &param))
+                setAdaptiveTimingMode(param);
             else if (isCommand(_command, "ATPPS", &param))
                 printProgramableParameters(param);
             else if (isCommand(_command, "ATI", &param))
@@ -304,6 +424,16 @@ namespace core { namespace can { namespace elm {
                 warmStart(param);
             else if (isCommand(_command, "ATZ", &param))
                 resetAll(param);
+            else if (isCommand(_command, "AT@2", &param))
+                respondUnkown();
+            else if (isCommand(_command, "STI", &param))
+                respondUnkown();
+            else if (isCommand(_command, "VTI", &param))
+                respondUnkown();
+            else if (isCommand(_command, "ATPP", &param))
+                respondOk();
+            else if (isCommand(_command, "ATBI", &param))
+                bypassInit(param);
             else
                 respondUnkown();
         }
@@ -320,17 +450,28 @@ namespace core { namespace can { namespace elm {
             _out.writeLine(response);
         }
 
+        void initIsoTp() {
+            _isotp.emplace(_dispatcher, _can, _config.transmitAddress, _config.filterId);
+        }
+
+        void deinitIsoTp() {
+            _isotp.reset();
+        }
+
     private:
-        core::async::IDispatcher& _dispatcher;
+        char _input[40];
+        char _command[40];
+        core::coop::IDispatcher& _dispatcher;
         ElmRuntimeConfiguration _config;
         core::io::StreamReader _in;
         core::io::StreamWriter _out;
-        core::cli::LineEditor<40, cstrings::CR> _prompt;
-        char _command[40];
+        core::StringBuilder _prompt;
         core::can::ICanInterface& _can;
         etl::optional<core::can::IsoTpSocket> _isotp;
-        core::shared_ptr<async::IFuture> _backgroundWorkerTask;
+        core::shared_ptr<coop::IFuture> _backgroundWorkerTask;
         State _state;
+        uint64_t _startedReceiving;
+        bool _bytesReceived;
 
     };
 }}}

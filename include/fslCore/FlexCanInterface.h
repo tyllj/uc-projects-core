@@ -12,7 +12,7 @@
 #include <fsl_flexcan.h>
 #include "core/shared_ptr.h"
 #include "core/can/ICanInterface.h"
-#include "core/async/Future.h"
+#include "core/coop/Future.h"
 
 #define RX_MESSAGE_BUFFER_NUM (9)
 #define RX_RTR_BUFFER_NUM (10)
@@ -28,7 +28,7 @@ namespace fslCore {
 
     class FlexCanInterface : public core::can::ICanInterface {
     public:
-        FlexCanInterface(core::async::IDispatcher& dispatcher, CAN_Type *can, uint32_t baudRate = 1000000U, FlexCanOperationMode mode = FLEXCAN_NORMAL,
+        FlexCanInterface(core::coop::IDispatcher& dispatcher, CAN_Type *can, uint32_t baudRate = 1000000U, FlexCanOperationMode mode = FLEXCAN_NORMAL,
                          flexcan_clock_source_t clockSource = kFLEXCAN_ClkSrcPeri,
                          uint32_t clockFreq = CLOCK_GetFreq(kCLOCK_BusClk)) : _dispatcher(dispatcher), _can(can) {
             FLEXCAN_GetDefaultConfig(&_canConfig);
@@ -53,7 +53,7 @@ namespace fslCore {
             FLEXCAN_TransferCreateHandle(can, &_flexcanHandle, flexcan_callback, (void*) this);
 
             setTxComplete();
-            core::shared_ptr<core::async::IFuture> transferTask(new core::async::Future<FlexCanInterface*, void*>(this, [](core::async::FutureContext<FlexCanInterface*, void*> ctx) {
+            core::shared_ptr<core::coop::IFuture> transferTask(new core::coop::Future<FlexCanInterface*, void*>(this, [](core::coop::FutureContext<FlexCanInterface*, void*> ctx) {
 				FlexCanInterface& self = *(ctx.getData());
             	if (self.isRxComplete()) {
             		// Step 1: Handle Packet, throw event
@@ -145,7 +145,7 @@ namespace fslCore {
         }
 
     private:
-        core::async::IDispatcher& _dispatcher;
+        core::coop::IDispatcher& _dispatcher;
         flexcan_config_t _canConfig;
         flexcan_rx_mb_config_t _mbConfig;
         canid_t _filterId;

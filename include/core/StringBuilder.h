@@ -18,6 +18,8 @@ namespace core {
     public:
         StringBuilder() : StringBuilder(_stringBuilderBuffer, sizeof(_stringBuilderBuffer)) {}
         StringBuilder(char* str, size_t length) : _buffer(str), _length(length), _position(0) {}
+        template<size_t n>
+        StringBuilder(char (&str)[n]) : StringBuilder(str, n) {}
         size_t length() const { return _position; }
 
         operator const char*() const { return toCString(); }
@@ -27,7 +29,7 @@ namespace core {
             while (_position < _length && str[i] != '\0') {
                 _buffer[_position] = str[i];
                 i++;
-                _position++;
+                seek(1);
             }
             _buffer[_position] = '\0';
             return *this;
@@ -38,7 +40,7 @@ namespace core {
             while (_position < _length && _position < count && str[i] != '\0') {
                 _buffer[_position] = str[i];
                 i++;
-                _position++;
+                seek(1);
             }
             _buffer[_position] = '\0';
             return *this;
@@ -50,6 +52,7 @@ namespace core {
 
             *ptr() = c;
             seek(1);
+            _buffer[_position] = '\0';
             return *this;
         }
 
@@ -62,8 +65,7 @@ namespace core {
                 return *this;
 
             core::dtostrf(value, width, decimalPlaces, &_buffer[_position]);
-            *(ptr() + _length) = '\0';
-            _position += width;
+            seek(width);
             return *this;
         }
 
@@ -76,6 +78,7 @@ namespace core {
             pad(width - intWidth, padding);
             core::ltoa(value, ptr(), 10);
             seek(intWidth);
+            return *this;
         }
         StringBuilder& append(int32_t value) {
             uint8_t intWidth = decimalLength(value);

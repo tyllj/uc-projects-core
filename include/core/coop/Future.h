@@ -9,9 +9,9 @@
 #include "etl/delegate.h"
 #include "core/unique_ptr.h"
 
-#define FUTURE_RETURN(ctx, rslt) do { ctx.setResult(rslt); return; } while (0)
+#define FUTURE_FROM_MEMBER(classname, methodname) core::coop::_futureFromMember<classname, &classname::methodname>(this)
 
-namespace core { namespace async {
+namespace core { namespace coop {
     class IFuture {
     public:
         virtual bool runSlice() = 0;
@@ -131,12 +131,18 @@ namespace core { namespace async {
     template<typename T, void (T::*methodName)(void)>
     static core::shared_ptr<IFuture> _futureFromMember(T* instance) {
         auto backgroundTaskDelegate
-                = etl::delegate<void(async::FutureContext<T*, void*>&)>::create([](async::FutureContext<T*, void*> ctx) {
+                = etl::delegate<void(coop::FutureContext<T*, void*>&)>::create([](coop::FutureContext<T*, void*> ctx) {
                     (ctx.getData()->*methodName)();
                 });
         return core::shared_ptr<IFuture>(new Future(instance, backgroundTaskDelegate));
     }
 
-#define FUTURE_FROM_MEMBER(classname, methodname) core::async::_futureFromMember<classname, &classname::methodname>(this)
+    template<typename TFunctor>
+    static core::shared_ptr<IFuture> futureFromFunctor(TFunctor functor) {
+        auto backgroundTaskDelegate = etl::delegate<void(coop::FutureContext<TFunctor, void*>&)>::create([](coop::FutureContext<TFunctor, void*> ctx) {
+            ctx.getData()();
+        });
+        return core::shared_ptr<IFuture>(new Future(functor, backgroundTaskDelegate));
+    }
 }}
 #endif //SGLOGGER_FUTURE_H

@@ -9,7 +9,6 @@
 #include "core/cli/CliProgram.h"
 #include "core/cli/StringMap.h"
 #include "core/cli/CommandNotFound.h"
-#include "core/Sleep.h"
 #include "core/StringBuilder.h"
 #include "core/io/Path.h"
 

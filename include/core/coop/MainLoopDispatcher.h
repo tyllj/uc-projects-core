@@ -8,7 +8,7 @@
 #include "etl/vector.h"
 #include "Future.h"
 
-namespace core { namespace async {
+namespace core { namespace coop {
     template <size_t MAX_TASKS>
     class MainLoopDispatcher : public IDispatcher {
     public:

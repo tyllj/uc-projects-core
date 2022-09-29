@@ -22,7 +22,7 @@ namespace core { namespace can {namespace elm {
             "20:FF F  21:FF F  22:FF F  23:FF F\r"
             "24:00 F  25:00 F  26:00 F  27:FF F\r"
             "28:FF F  29:FF F  2A:38 N  2B:02 F\r"
-            "2C:81 N  2D:04 N  2E:81 N  2F:01 N\r";
+            "2C:81 N  2D:04 N  2E:81 N  2F:01 N";
 
     struct ElmRuntimeConfiguration {
         canid_t filterId = 0x7E8;
@@ -31,6 +31,8 @@ namespace core { namespace can {namespace elm {
         uint8_t timeoutMultiplier = 0x32;
         uint8_t testerAddress = 0xF9;
         uint8_t adaptiveTimingMode = 1;
+        uint8_t protocol = 6;
+        bool bypassInit = false;
         bool isEchoOn = true;
         bool isHeadersOn = true;
         bool isResponsesOn = false;

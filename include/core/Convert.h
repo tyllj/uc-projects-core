@@ -33,5 +33,35 @@ namespace core { namespace convert {
     inline int32_t toInt32(const char* str, uint8_t base = 10) {
         return static_cast<int32_t>(strtol(str, nullptr, base));
     }
+
+    inline void toHexString(uint8_t* data, size_t n, char* destination, size_t destinationSize) {
+        StringBuilder sb(destination, destinationSize);
+        for (size_t i = 0; i < n; i++)
+            sb.appendHex(data[i]);
+    }
+
+    template<size_t destinationSize>
+    inline void toHexString(uint8_t* data, size_t n, char (&destination)[destinationSize]) {
+        toHexString(data, n, destination, destinationSize);
+    }
+
+    inline size_t fromHexString(const char *hexString, uint8_t* bytes, size_t n) {
+        size_t i = 0;
+        char currentByteString[3] = { 0x00 };
+
+        while (hexString[2 * i] && hexString[2 * i + 1] && i < n) {
+            currentByteString[0] = hexString[2 * i];
+            currentByteString[1] = hexString[2 * i + 1];
+            bytes[i++] = convert::toUInt8(currentByteString, 16);
+        }
+        return i;
+    }
+
+    template<size_t n>
+    inline size_t fromHexString(const char* hexString, uint8_t (&bytes)[n]) {
+        return fromHexString(hexString, bytes, n);
+    }
+
+
 }}
 #endif //SGLOGGER_CONVERT_H
