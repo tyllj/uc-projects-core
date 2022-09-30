@@ -39,13 +39,13 @@ namespace core { namespace platform { namespace pc {
                 return;
 
             char devicePath[16] = {0};
-            snprintf(_portName, sizeof(devicePath), "\\\\.\\%s", _portName);
-            _handle = CreateFileA(_portName);
+            snprintf(devicePath, sizeof(devicePath), "\\\\.\\%s", _portName);
+            _handle = CreateFileA(devicePath, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
             if(_handle == INVALID_HANDLE_VALUE) {
                 throw std::runtime_error("Could not create handle.");
             }
 
-            char modeString[64] = {0};
+            char modeString[128] = {0};
             snprintf(modeString, sizeof(modeString), "%s data=8 parity=n stop=1 xon=off to=off odsr=off dtr=on rts=on",
                      baudToModeString(_baudRate));
             DCB portAttributes;
@@ -54,7 +54,7 @@ namespace core { namespace platform { namespace pc {
 
             bool error = !BuildCommDCBA(modeString, &portAttributes);
             if (!error)
-                error |= !SetCommState(modeString, &portAttributes);
+                error |= !SetCommState(_handle, &portAttributes);
 
             COMMTIMEOUTS timeouts;
             timeouts.ReadIntervalTimeout         = MAXDWORD;
@@ -62,8 +62,8 @@ namespace core { namespace platform { namespace pc {
             timeouts.ReadTotalTimeoutConstant    = 0;
             timeouts.WriteTotalTimeoutMultiplier = 0;
             timeouts.WriteTotalTimeoutConstant   = 0;
-            if (error)
-                error |= SetCommTimeouts(_handle, &timeouts);
+            if (!error)
+                error |= !SetCommTimeouts(_handle, &timeouts);
 
             if(error) {
                 CloseHandle(_handle);
@@ -85,25 +85,25 @@ namespace core { namespace platform { namespace pc {
         int32_t readByte() final {
             int32_t n = 0;
             uint8_t byte;
-            if (!_isOpen || ReadFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(&n)) || n != 1)
+            if (!_isOpen || ReadFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(&n), NULL) || n != 1)
                 return -1;
             return (int32_t) byte;
         }
 
         size_t read(uint8_t* buffer, size_t offset, size_t count) final {
             int32_t n = 0;
-            ReadFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&n));
+            ReadFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&n), NULL);
             return n;
         }
 
         void writeByte(uint8_t byte) final {
             if (_isOpen)
-                WriteFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(nullptr), NULL);
+                WriteFile(_handle, &byte, 1, nullptr, NULL);
         }
 
         void write(const uint8_t* buffer, size_t offset, size_t count) final {
             if (_isOpen) {
-                WriteFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(nullptr), NULL);
+                WriteFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, nullptr, NULL);
             }
         }
 

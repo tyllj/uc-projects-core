@@ -10,7 +10,6 @@
 #include <string.h>
 #include <windows.h>
 #include <Setupapi.h>
-#include "hal/osapi.h"
 
 namespace core { namespace platform { namespace pc { namespace usb {
     void findUsbSerialPortByProductId(char* devicePath, size_t n, const char* vid, const char* pid) {
