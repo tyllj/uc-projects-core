@@ -2,8 +2,8 @@
 // Created by tyll on 21.09.22.
 //
 
-#ifndef SGLOGGER_CONVERT_H
-#define SGLOGGER_CONVERT_H
+#ifndef UC_CORE_CONVERT_H
+#define UC_CORE_CONVERT_H
 
 
 #include <stdint.h>
@@ -64,4 +64,4 @@ namespace core { namespace convert {
 
 
 }}
-#endif //SGLOGGER_CONVERT_H
+#endif //UC_CORE_CONVERT_H

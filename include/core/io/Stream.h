@@ -5,6 +5,7 @@
 #ifndef UC_CORE_STREAM_H
 #define UC_CORE_STREAM_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 namespace core { namespace io {

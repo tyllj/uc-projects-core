@@ -2,8 +2,8 @@
 // Created by tyll on 2022-05-29.
 //
 
-#ifndef SGLOGGER_UNIQUE_PTR_H
-#define SGLOGGER_UNIQUE_PTR_H
+#ifndef UC_CORE_UNIQUE_PTR_H
+#define UC_CORE_UNIQUE_PTR_H
 
 namespace core {
     template<typename T>
@@ -161,4 +161,4 @@ namespace core {
     }
 }
 
-#endif //SGLOGGER_UNIQUE_PTR_H
+#endif //UC_CORE_UNIQUE_PTR_H

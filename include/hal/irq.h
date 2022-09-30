@@ -2,7 +2,7 @@
 // Created by tyll on 2022-09-25.
 //
 
-#ifndef SGLOGGER_IRQ_H
-#define SGLOGGER_IRQ_H
+#ifndef UC_CORE_IRQ_H
+#define UC_CORE_IRQ_H
 
-#endif //SGLOGGER_IRQ_H
+#endif //UC_CORE_IRQ_H

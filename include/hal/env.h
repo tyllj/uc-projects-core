@@ -2,9 +2,9 @@
 // Created by tyll on 2022-09-25.
 //
 
-#ifndef SGLOGGER_ENV_H
-#define SGLOGGER_ENV_H
+#ifndef UC_CORE_ENV_H
+#define UC_CORE_ENV_H
 namespace core {
     void initializeEnvironment();
 }
-#endif //SGLOGGER_ENV_H
+#endif //UC_CORE_ENV_H

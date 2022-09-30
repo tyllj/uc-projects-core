@@ -2,8 +2,8 @@
 // Created by tyll on 2022-09-11.
 //
 
-#ifndef SGLOGGER_ELMCOMMANDINTERPRETER_H
-#define SGLOGGER_ELMCOMMANDINTERPRETER_H
+#ifndef UC_CORE_ELMCOMMANDINTERPRETER_H
+#define UC_CORE_ELMCOMMANDINTERPRETER_H
 
 #include "ElmRuntimeConfiguration.h"
 #include "core/cli/LineEditor.h"
@@ -459,8 +459,8 @@ namespace core { namespace can { namespace elm {
         }
 
     private:
-        char _input[40];
-        char _command[40];
+        char _input[40] = {0};
+        char _command[40] = {0};
         core::coop::IDispatcher& _dispatcher;
         ElmRuntimeConfiguration _config;
         core::io::StreamReader _in;
@@ -476,4 +476,4 @@ namespace core { namespace can { namespace elm {
     };
 }}}
 
-#endif //SGLOGGER_ELMCOMMANDINTERPRETER_H
+#endif //UC_CORE_ELMCOMMANDINTERPRETER_H

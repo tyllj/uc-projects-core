@@ -2,8 +2,8 @@
 // Created by tyll on 21.09.22.
 //
 
-#ifndef SGLOGGER_ELMRUNTIMECONFIGURATION_H
-#define SGLOGGER_ELMRUNTIMECONFIGURATION_H
+#ifndef UC_CORE_ELMRUNTIMECONFIGURATION_H
+#define UC_CORE_ELMRUNTIMECONFIGURATION_H
 
 #include <stdint.h>
 #include "core/can/ICanInterface.h"
@@ -43,4 +43,4 @@ namespace core { namespace can {namespace elm {
 
     };
 }}}
-#endif //SGLOGGER_ELMRUNTIMECONFIGURATION_H
+#endif //UC_CORE_ELMRUNTIMECONFIGURATION_H

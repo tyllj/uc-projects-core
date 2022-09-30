@@ -2,8 +2,8 @@
 // Created by tyll on 2022-09-25.
 //
 
-#ifndef SGLOGGER_PINIO_H
-#define SGLOGGER_PINIO_H
+#ifndef UC_CORE_PINIO_H
+#define UC_CORE_PINIO_H
 
 #ifndef HIGH
 #define HIGH 0x01
@@ -295,4 +295,4 @@ namespace core {
     void pinMode(pin_t pin, pinmode_t pinmode);
 }
 
-#endif //SGLOGGER_PINIO_H
+#endif //UC_CORE_PINIO_H

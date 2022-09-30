@@ -2,8 +2,8 @@
 // Created by tyll on 08.09.22.
 //
 
-#ifndef SGLOGGER_ISOTPSOCKET_H
-#define SGLOGGER_ISOTPSOCKET_H
+#ifndef UC_CORE_ISOTPSOCKET_H
+#define UC_CORE_ISOTPSOCKET_H
 
 #include "ICanInterface.h"
 #include "core/Tick.h"
@@ -197,4 +197,4 @@ extern "C" {
     }
 }}
 
-#endif //SGLOGGER_ISOTPSOCKET_H
+#endif //UC_CORE_ISOTPSOCKET_H

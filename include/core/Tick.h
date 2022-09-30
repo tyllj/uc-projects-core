@@ -2,8 +2,8 @@
 // Created by tyll on 2022-09-28.
 //
 
-#ifndef SGLOGGER_TICK_H
-#define SGLOGGER_TICK_H
+#ifndef UC_CORE_TICK_H
+#define UC_CORE_TICK_H
 
 #include <stdint.h>
 #include "hal/tick.h"
@@ -16,4 +16,4 @@ namespace core {
         return core::hal::millis() - timestamp;
     }
 }
-#endif //SGLOGGER_TICK_H
+#endif //UC_CORE_TICK_H

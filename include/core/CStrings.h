@@ -9,6 +9,7 @@
 #include <string.h>
 #include <cctype>
 #include "shared_ptr.h"
+#include "core/Math.h"
 
 #define SUBSTRING_NOT_FOUND -1
 
@@ -20,7 +21,12 @@ namespace core { namespace cstrings {
 
     template<size_t n>
     inline void copyTo(char (&destination)[n], const char* source) {
-        strncpy(reinterpret_cast<char *>(&destination), source, n);
+        strncpy(reinterpret_cast<char *>(&destination), source, n - 1);
+    }
+
+    template<size_t bufferSize>
+    inline void copyTo(char (&destination)[bufferSize], const char* source, size_t n) {
+        strncpy(reinterpret_cast<char *>(&destination), source, min(bufferSize - 1, n));
     }
 
     inline uint8_t split(char* str, const char spliterator, char** dest, uint8_t limit) {
@@ -169,8 +175,9 @@ namespace core { namespace cstrings {
     }
 
     inline core::CString toSharedCString(const char* str) {
-        CString result = CString(length(str) + 1);
-        strcpy(result.get(), str);
+        size_t size = length(str) + 1;
+        CString result = CString(size);
+        memcpy(result.get(), str, size);
         return result;
     }
 

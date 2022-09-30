@@ -28,16 +28,16 @@
 int main() {
     core::coop::MainLoopDispatcher<16> dispatcher;
 
-    core::CString portName = core::io::ports::usb::findCh340();
+    core::CString portName = core::platform::pc::usb::findCh340();
     if (core::cstrings::isNullOrEmpty(portName.get()))
         return 1;
-    core::io::ports::SerialPort usb(portName.get());
+    core::platform::pc::SerialPort usb(portName.get());
     usb.baudRate(core::can::USBCAN_SERIAL_BAUD);
     usb.open();
 
     core::can::UsbCanSeeed can(usb);
 
-    core::io::ports::SerialPort tty("COM3");
+    core::platform::pc::SerialPort tty("COM3");
     tty.baudRate(38400);
     tty.open();
 

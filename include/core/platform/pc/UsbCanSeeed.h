@@ -2,8 +2,8 @@
 // Created by tyll on 2022-05-01.
 //
 
-#ifndef SGLOGGER_USBCANSEEED_H
-#define SGLOGGER_USBCANSEEED_H
+#ifndef UC_CORE_USBCANSEEED_H
+#define UC_CORE_USBCANSEEED_H
 
 #include <stdint.h>
 #include <unistd.h>
@@ -16,10 +16,6 @@
 
 namespace core { namespace can {
     constexpr int32_t USBCAN_SERIAL_BAUD = 2000000;
-
-    core::CString UsbCanSeeedAutodetectPath() {
-        return core::io::ports::usb::findCh340();
-    }
 
     class UsbCanSeeed : public ICanInterface {
     private:
@@ -264,4 +260,4 @@ namespace core { namespace can {
 
 }}
 
-#endif //SGLOGGER_USBCANSEEED_H
+#endif //UC_CORE_USBCANSEEED_H

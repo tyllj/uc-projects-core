@@ -2,8 +2,8 @@
 // Created by tyll on 2022-05-09.
 //
 
-#ifndef SGLOGGER_FUTURE_H
-#define SGLOGGER_FUTURE_H
+#ifndef UC_CORE_FUTURE_H
+#define UC_CORE_FUTURE_H
 
 #include "etl/optional.h"
 #include "etl/delegate.h"
@@ -145,4 +145,4 @@ namespace core { namespace coop {
         return core::shared_ptr<IFuture>(new Future(functor, backgroundTaskDelegate));
     }
 }}
-#endif //SGLOGGER_FUTURE_H
+#endif //UC_CORE_FUTURE_H

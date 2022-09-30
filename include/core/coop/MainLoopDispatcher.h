@@ -2,8 +2,8 @@
 // Created by tyll on 2022-05-29.
 //
 
-#ifndef SGLOGGER_MAINLOOPDISPATCHER_H
-#define SGLOGGER_MAINLOOPDISPATCHER_H
+#ifndef UC_CORE_MAINLOOPDISPATCHER_H
+#define UC_CORE_MAINLOOPDISPATCHER_H
 
 #include "etl/vector.h"
 #include "Future.h"
@@ -37,4 +37,4 @@ namespace core { namespace coop {
 }}
 
 
-#endif //SGLOGGER_MAINLOOPDISPATCHER_H
+#endif //UC_CORE_MAINLOOPDISPATCHER_H

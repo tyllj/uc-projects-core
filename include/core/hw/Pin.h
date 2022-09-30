@@ -25,4 +25,4 @@ namespace core { namespace hw {
     };
 }}
 
-#endif //SGLOGGER_PIN_H
+#endif //UC_CORE_PIN_H
