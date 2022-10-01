@@ -1,7 +1,6 @@
 
 #ifdef CORE_TESTAPP
 
-#include <unistd.h>     //STDIN_FILENO
 #include "core/io/ConsoleWriter.h"
 //#include "core/io/ConsoleReader.h"
 #include "core/platform/pc/SerialPort.h"

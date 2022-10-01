@@ -17,10 +17,8 @@ namespace core {
         explicit unique_ptr(T* data)
                 : _ptr(data)
         {
-            printf("%s", "unique_ptr()\n");
         }
         ~unique_ptr() {
-            printf("%s", "~unique_ptr()\n");
             delete _ptr;
         }
 
@@ -89,10 +87,9 @@ namespace core {
         explicit unique_ptr(T* data)
                 : _ptr(data)
         {
-            printf("%s", "unique_ptr<[]>()\n");
+
         }
         ~unique_ptr() {
-            printf("%s", "~unique_ptr<[]>()\n");
             delete[] _ptr;
         }
 

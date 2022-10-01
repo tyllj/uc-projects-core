@@ -48,20 +48,15 @@ namespace core { namespace platform { namespace pc {
             char modeString[128] = {0};
             snprintf(modeString, sizeof(modeString), "%s data=8 parity=n stop=1 xon=off to=off odsr=off dtr=on rts=on",
                      baudToModeString(_baudRate));
-            DCB portAttributes;
-            memset(&portAttributes, 0, sizeof(portAttributes));
+            DCB portAttributes = {};
             portAttributes.DCBlength = sizeof(portAttributes);
 
             bool error = !BuildCommDCBA(modeString, &portAttributes);
             if (!error)
                 error |= !SetCommState(_handle, &portAttributes);
 
-            COMMTIMEOUTS timeouts;
-            timeouts.ReadIntervalTimeout         = MAXDWORD;
-            timeouts.ReadTotalTimeoutMultiplier  = 0;
-            timeouts.ReadTotalTimeoutConstant    = 0;
-            timeouts.WriteTotalTimeoutMultiplier = 0;
-            timeouts.WriteTotalTimeoutConstant   = 0;
+            COMMTIMEOUTS timeouts = {};
+            timeouts.ReadIntervalTimeout = MAXDWORD;
             if (!error)
                 error |= !SetCommTimeouts(_handle, &timeouts);
 
@@ -85,26 +80,30 @@ namespace core { namespace platform { namespace pc {
         int32_t readByte() final {
             int32_t n = 0;
             uint8_t byte;
-            if (!_isOpen || ReadFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(&n), NULL) || n != 1)
+            if (!_isOpen || !ReadFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(&n), NULL) || n != 1)
                 return -1;
             return (int32_t) byte;
         }
 
         size_t read(uint8_t* buffer, size_t offset, size_t count) final {
+            if (_isOpen)
+                return 0;
             int32_t n = 0;
             ReadFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&n), NULL);
             return n;
         }
 
         void writeByte(uint8_t byte) final {
+            int32_t bytesWritten;
             if (_isOpen)
-                WriteFile(_handle, &byte, 1, nullptr, NULL);
+                WriteFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(&bytesWritten), NULL);
         }
 
         void write(const uint8_t* buffer, size_t offset, size_t count) final {
-            if (_isOpen) {
-                WriteFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, nullptr, NULL);
-            }
+            int32_t bytesWritten;
+            if (_isOpen)
+                WriteFile(_handle, const_cast<unsigned char *>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&bytesWritten), NULL);
+
         }
 
         static const char* baudToModeString(uint32_t baudrate) {
@@ -134,7 +133,7 @@ namespace core { namespace platform { namespace pc {
         }
 
     private:
-        char _portName[32] = {0};
+        char _portName[16] = {0};
         HANDLE _handle;
         int32_t _baudRate;
         bool _isOpen;

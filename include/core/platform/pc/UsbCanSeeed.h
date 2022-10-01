@@ -6,7 +6,7 @@
 #define UC_CORE_USBCANSEEED_H
 
 #include <stdint.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include "core/platform/pc/Usb.h"
 #include "core/io/Stream.h"

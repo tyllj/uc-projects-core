@@ -13,13 +13,13 @@
 
 namespace core { namespace platform { namespace pc { namespace usb {
     void findUsbSerialPortByProductId(char* devicePath, size_t n, const char* vid, const char* pid) {
-        HDEVINFO DeviceInfoSet;
+        HDEVINFO DeviceInfoSet = {};
         DWORD DeviceIndex =0;
-        SP_DEVINFO_DATA DeviceInfoData;
+        SP_DEVINFO_DATA DeviceInfoData = {};
         const char* DevEnum = "USB";
         char ExpectedDeviceId[80] = {0}; //Store hardware id
         BYTE szBuffer[1024] = {0};
-        DEVPROPTYPE ulPropertyType;
+        DEVPROPTYPE ulPropertyType = {};
         DWORD dwSize = 0;
 
         ZeroMemory(devicePath, n);
@@ -38,7 +38,6 @@ namespace core { namespace platform { namespace pc { namespace usb {
         if (DeviceInfoSet == INVALID_HANDLE_VALUE)
             return;
 
-        ZeroMemory(&DeviceInfoData, sizeof(SP_DEVINFO_DATA));
         DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
         //Receive information about an enumerated device
         while (SetupDiEnumDeviceInfo(

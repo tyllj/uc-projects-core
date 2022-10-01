@@ -14,7 +14,6 @@
 #include "core/CStrings.h"
 #include <string.h>
 #include <stdio.h>
-#include <unistd.h>
 
 
 namespace core { namespace platform { namespace pc { namespace usb {

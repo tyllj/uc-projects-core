@@ -11,6 +11,11 @@
 #include "shared_ptr.h"
 #include "core/Math.h"
 
+#ifdef _MSC_VER
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
+
 #define SUBSTRING_NOT_FOUND -1
 
 namespace core {
