@@ -3,6 +3,6 @@
 //
 #include "hal/env.h"
 
-void __attribute__((weak)) core::initializeEnvironment() {
+void core::initializeEnvironment() {
 
 }

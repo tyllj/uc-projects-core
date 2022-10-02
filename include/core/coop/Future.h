@@ -9,6 +9,7 @@
 #include "etl/delegate.h"
 #include "core/unique_ptr.h"
 
+#define FUTURE_RETURN(ctx, val) do {ctx.setResult(val); return;} while(1)
 #define FUTURE_FROM_MEMBER(classname, methodname) core::coop::_futureFromMember<classname, &classname::methodname>(this)
 
 namespace core { namespace coop {
@@ -24,6 +25,10 @@ namespace core { namespace coop {
     class IDispatcher {
     public:
         virtual void run(core::shared_ptr<IFuture> future) = 0;
+        template<typename TFuture>
+        void run(TFuture future) {
+            this->run(core::shared_ptr<IFuture>(reinterpret_cast<IFuture*>(new auto {future})));
+        }
     };
 
     template<typename TData, typename TResult>
@@ -65,7 +70,6 @@ namespace core { namespace coop {
     template<typename TData, typename TResult>
     class Future : public IFuture {
     public:
-
         Future(TData data, etl::delegate<void(FutureContext<TData, TResult>&)> sliceFunc) :
             _context(data, sliceFunc) { }
 
