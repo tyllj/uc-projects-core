@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 project(uc-core)
 
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(-Wall -Wextra -Wpedantic -Wno-unused-parameter -Werror)
+add_compile_options(-fexceptions -Wall -Wextra -Wpedantic -Wno-unused-parameter -Werror)
 
 include_directories(include)
 include_directories(lib)
@@ -12,7 +12,7 @@ set_source_files_properties(lib/iso15765-canbus/src/lib_iso15765.c PROPERTIES CO
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 add_compile_definitions(CORE_TESTAPP)
-add_compile_definitions(ETL_NO_STL ETL_FORCE_STD_INITIALIZER_LIST)
+add_compile_definitions(ETL_NO_STL ETL_FORCE_STD_INITIALIZER_LIST ETL_THROW_EXCEPTIONS)
 add_executable(main main.cpp)
 target_sources(main PUBLIC src/platform/pc/env.cpp)
 target_sources(main PUBLIC lib/iso15765-canbus/src/lib_iso15765.c lib/iso15765-canbus/src/lib_iqueue.c)

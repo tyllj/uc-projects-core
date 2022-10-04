@@ -71,14 +71,19 @@ namespace core {
         constexpr shared_ptr() : _ptr(nullptr), _refCount(nullptr) {}
         explicit shared_ptr(T* const ptr ) : _ptr(ptr), _refCount(new _CORE_ATOMIC_IMPL(1)) {}
 
-        shared_ptr(const shared_ptr<T>& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount) {
+        shared_ptr(const shared_ptr& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             if (_refCount)
                 (*_refCount)++;
         }
 
-        shared_ptr(shared_ptr<T>&& ptr) noexcept : _ptr(ptr._ptr), _refCount(ptr._refCount) {
+        shared_ptr(shared_ptr&& ptr) noexcept : _ptr(ptr._ptr), _refCount(ptr._refCount) {
             ptr._refCount = nullptr;
             ptr._ptr = nullptr;
+        }
+
+        template<class U>
+        operator shared_ptr<U>() {
+            return shared_ptr<U>(reinterpret_cast<shared_ptr<U>&>(*this));
         }
 
         ~shared_ptr() {
@@ -166,6 +171,10 @@ namespace core {
         shared_ptr& operator=(const shared_ptr& other) {
             shared_ptr<T[]>(other).swap(*this);
             return *this;
+        }
+
+        operator T*() {
+            return _ptr;
         }
 
         void swap(shared_ptr<T[]>& other) {

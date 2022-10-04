@@ -44,7 +44,11 @@ namespace core { namespace can { namespace elm {
     private:
         void startBackgroundWorker(coop::IDispatcher &dispatcher) {
             beginAcceptInput();
-            _backgroundWorkerTask = FUTURE_FROM_MEMBER(ElmCommandInterpreter, process);
+            auto backgroundWorkerDelegate = [self = this]() {
+                self->process();
+                return core::coop::yieldContinue();
+            };
+            _backgroundWorkerTask = core::shared_ptr<core::coop::IFuture>(new core::coop::Future<void, decltype(backgroundWorkerDelegate)>(backgroundWorkerDelegate));
             dispatcher.run(_backgroundWorkerTask);
         }
 

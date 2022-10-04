@@ -65,7 +65,7 @@ static inline core::can::ICanInterface* _core_can_isotp_glue_iface = nullptr;
 static inline core::can::IsoTpSocket* _core_can_isotp_glue_socket = nullptr;
 static inline canid_t _core_can_isotp_glue_txid = 0;
 static inline canid_t _core_can_isotp_glue_rxid = 0;
-static inline etl::queue_spsc_atomic<core::can::IsoTpPacket, UC_CORE_ISOTP_QUEUE_SIZE> _core_can_isotp_glue_received;
+static inline etl::queue_spsc_atomic<core::can::IsoTpPacket, UC_CORE_ISOTP_QUEUE_SIZE> _core_can_isotp_glue_received = etl::queue_spsc_atomic<core::can::IsoTpPacket, UC_CORE_ISOTP_QUEUE_SIZE>();
 
 static inline void core_can_isotp_glue_init(core::can::IsoTpSocket* socket, core::can::ICanInterface* iface, canid_t txid, canid_t rxid) {
     if (_core_can_isotp_glue_socket == nullptr && _core_can_isotp_glue_iface == nullptr) {
@@ -73,6 +73,7 @@ static inline void core_can_isotp_glue_init(core::can::IsoTpSocket* socket, core
         _core_can_isotp_glue_iface = iface;
         _core_can_isotp_glue_txid = txid;
         _core_can_isotp_glue_rxid = rxid;
+        _core_can_isotp_glue_received.clear();
     }
 }
 static inline void core_can_isotp_glue_deinit(core::can::IsoTpSocket* socket) {
@@ -87,9 +88,10 @@ extern "C" {
     static inline uint8_t core_can_isotp_glue_iface_send_frame(cbus_id_type id_type, uint32_t id, cbus_fr_format fr_fmt, uint8_t dlc, uint8_t* dt) {
         if (_core_can_isotp_glue_iface == nullptr)
             return 0;
-        core::can::CanFrame f;
+        core::can::CanFrame f = {};
         f.id = _core_can_isotp_glue_txid;
-        f.length = dlc;
+        f.length = 8;
+        memset(f.payload, 0x55, sizeof(f.payload));
         memcpy(f.payload, dt, dlc);
         _core_can_isotp_glue_iface->writeFrame(f);
         return 0;
@@ -149,7 +151,7 @@ extern "C" {
 
     void IsoTpSocket::send(uint8_t *data, uint16_t length) {
         canid_t id = _core_can_isotp_glue_txid;
-        n_req_t f;
+        n_req_t f = {};
         f.n_ai.n_pr = (uint8_t)((id & 0x700U) >> 8);
         f.n_ai.n_ta = (uint8_t)((id & 0x38U) >> 3);
         f.n_ai.n_sa = (uint8_t)(id & 0x07U);
@@ -157,11 +159,13 @@ extern "C" {
         f.fr_fmt = CBUS_FR_FRM_STD;
         memcpy(f.msg, data, length);
         f.msg_sz = length;
+        if (length < I15765_MSG_SIZE)
+            memset(f.msg + length, 0x55, I15765_MSG_SIZE - length);
         iso15765_send(&_isotp, &f);
     }
 
     bool IsoTpSocket::available() const {
-        return _core_can_isotp_glue_received.available() > 0;
+        return _core_can_isotp_glue_received.size() > 0;
     }
 
     bool IsoTpSocket::tryReceive(IsoTpPacket& outPacket) const {
@@ -185,14 +189,13 @@ extern "C" {
     }
 
     void IsoTpSocket::startBackgroundWorker(coop::IDispatcher &dispatcher) {
+        auto backgroundLambda = [self = this](){
+            self->backgroundReceive();
+            iso15765_process(&self->_isotp);
+            return coop::yieldContinue();
+        };
 
-        etl::delegate<void(coop::FutureContext<IsoTpSocket*, void*>&)> backgroundTaskDelegate
-         = etl::delegate<void(coop::FutureContext<IsoTpSocket*, void*>&)>::create([](coop::FutureContext<IsoTpSocket*, void*> ctx) {
-                    ctx.getData()->backgroundReceive();
-                    iso15765_process(&(ctx.getData()->_isotp));
-                });
-
-        _backgroundWorkerTask = shared_ptr<coop::IFuture>(new coop::Future<IsoTpSocket*, void*>(this, backgroundTaskDelegate));
+        _backgroundWorkerTask = shared_ptr<coop::IFuture>(new coop::Future<void, decltype(backgroundLambda)>(backgroundLambda));
         dispatcher.run(_backgroundWorkerTask);
     }
 }}

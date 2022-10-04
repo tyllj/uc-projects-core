@@ -11,17 +11,20 @@
 #include "core/shared_ptr.h"
 
 namespace core { namespace coop {
-    template<typename TData>
+    template<typename TFunctor>
     class DispatcherTimer {
     public:
-        DispatcherTimer(void(*onTick)(TData), TData data, uint64_t interval) : _interval(interval), _onTick(onTick), _data(data) {
-            _future = core::shared_ptr( reinterpret_cast<IFuture*> (new core::coop::Future<DispatcherTimer<TData>*, void*>(this, [](FutureContext<DispatcherTimer<TData>*, void*>& ctx){
-                if (millisPassedSince(ctx.getData()->_last) >= ctx.getData()->_interval) {
-                    ctx.getData()->_last = millis();
-                    ctx.getData()->_onTick(ctx.getData()->_data);
+        DispatcherTimer(TFunctor onTick, uint64_t interval) {
+            auto timerDelegate = [&last = _last, interval, onTick](){
+                if (millisPassedSince(last) >= interval) {
+                    last = millis();
+                    onTick();
                 }
-            })));
+                return yieldContinue();
+            };
+            _future = core::shared_ptr<IFuture>(new Future<void, decltype(timerDelegate)>(timerDelegate));
         }
+
         ~DispatcherTimer() {
             _future->cancel();
         }
@@ -29,10 +32,7 @@ namespace core { namespace coop {
         operator core::shared_ptr<IFuture>() { return _future; }
 
     private:
-        uint64_t _interval;
-        uint64_t _last;
-        void (*_onTick)(TData);
-        TData _data;
+        uint64_t _last = 0;
         core::shared_ptr<IFuture> _future;
     };
 }}

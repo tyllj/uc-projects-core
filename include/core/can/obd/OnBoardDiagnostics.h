@@ -29,7 +29,7 @@ namespace core { namespace can { namespace obd {
 
         }
 
-        core::coop::Future<OnBoardDiagnostics*, ObdRequest> getCurrentData(ObdRequest request) {
+        auto getCurrentData(ObdRequest request) {
             uint8_t queryMsg[7] = {0};
             queryMsg[0] = OBD_GET_CURRENT_DATA;
             uint8_t i = 0;
@@ -38,26 +38,25 @@ namespace core { namespace can { namespace obd {
             initTp();
             _isotp->send(queryMsg, i + 1);
 
-            core::coop::Future<OnBoardDiagnostics*, ObdRequest> future = {this, [](core::coop::FutureContext<OnBoardDiagnostics*, ObdRequest>& ctx) {
-                OnBoardDiagnostics& self = *ctx.getData();
-
-                IsoTpSocket& isotp = self._isotp.value();
+            auto backgroundWorkerDelegate = [self = this](){
+                IsoTpSocket& isotp = self->_isotp.value();
                 IsoTpPacket p;
-                if (isotp.tryReceive(p)) {
-                    uint8_t j = 0;
-                    ObdRequest response;
+                if (isotp.tryReceive(p)/* && p.getData()[0] == OBD_GET_CURRENT_DATA + 40*/) {
+                    size_t j = 1; // skip first byte, which is service id.
+                    ObdRequest response = {};
                     while (j < p.length()) {
-                        ObdValue pid = {p.getData()[j++]};
-                        for (uint8_t k = 0; k > getDataLengthForPid(pid.Pid); k++)
+                        ObdValue pid( p.getData()[j++]);
+                        for (uint8_t k = 0; k < getDataLengthForPid(pid.Pid); k++)
                             pid[k] = p.getData()[j++];
                         response.add(pid);
                     }
-                    self.deinitTp();
-                    FUTURE_RETURN(ctx, response);
+                    self->deinitTp();
+                    return coop::yieldReturn(response);
                 }
-            }};
+                return coop::yieldContinue<ObdRequest>();
+            };
 
-            return future;
+            return core::coop::Future<ObdRequest, decltype(backgroundWorkerDelegate)>(backgroundWorkerDelegate);
         }
 
     private:

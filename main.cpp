@@ -1,6 +1,6 @@
 
 #ifdef CORE_TESTAPP
-
+#include <stdexcept>
 #include "hal/env.h"
 #include "core/io/ConsoleWriter.h"
 #include "core/io/ConsoleReader.h"
@@ -28,18 +28,28 @@
 #include "core/Tick.h"
 #include "core/coop/DispatcherTimer.h"
 
+
 int main() {
     core::initializeEnvironment();
     core::coop::MainLoopDispatcher<16> dispatcher;
 
     core::CString portName = core::platform::pc::usb::findCh340();
-    if (core::cstrings::isNullOrEmpty(portName.get()))
-        return 1;
-    core::platform::pc::SerialPort usb(portName.get());
+    if (core::cstrings::isNullOrEmpty(portName))
+        throw std::runtime_error("CAN interface not found.");
+    {
+        core::platform::pc::SerialPort resetPort(portName);
+        resetPort.open();
+        core::sleepms(200);
+        resetPort.close();
+        core::sleepms(200);
+    }
+    core::platform::pc::SerialPort usb(portName);
     usb.baudRate(core::can::USBCAN_SERIAL_BAUD);
     usb.open();
-
+    core::sleepms(500);
     core::can::UsbCanSeeed can(usb);
+    core::sleepms(500);
+
 /*
     core::platform::pc::SerialPort tty("COM3");
     tty.baudRate(38400);
@@ -50,34 +60,24 @@ int main() {
     core::io::ConsoleWriter out;
     core::can::obd::OnBoardDiagnostics obd(dispatcher, can);
 
-    struct Closure {
-        core::coop::IDispatcher& dispatcher;
-        core::io::ConsoleWriter& out;
-        core::can::obd::OnBoardDiagnostics& obd;
-    };
-    Closure c { dispatcher, out, obd };
-    core::coop::DispatcherTimer<Closure> timer([](Closure c){
-        core::can::obd::ObdRequest req;
-        req.add(0);
-        auto task = c.obd.getCurrentData(req).continueWith<Closure>(c, [](auto c, auto result){
-            core::StringBuilder sb;
-            auto pid = result->getByPid(0);
-            sb.appendHex(pid.A);
-            sb.appendHex(pid.B);
-            sb.appendHex(pid.C);
-            sb.appendHex(pid.D);
-            c.out.writeLine(sb.toCString());
-        });
-        c.dispatcher.run(task);
-
-        }, c, 5000);
-
-    dispatcher.run(timer);
-
+    core::can::obd::ObdRequest query;
+    query.add(0x0C, 2);
     for (;;) {
-        dispatcher.dispatchOne();
-        core::sleepms(2);
+        auto f = obd.getCurrentData(query).share();
+
+        dispatcher.run(f);
+        for (;;) {
+            dispatcher.dispatchOne();
+            core::sleepms(10);
+            if (f->isCompleted()) {
+                auto rpm = f->get().getByPid(0x0C).asUint16() / 4;
+                out.writeLine(core::StringBuilder().append("EngineSpeed=").append(rpm));
+                break;
+            }
+        }
     }
+    system("pause");
+
 }
 
 #endif

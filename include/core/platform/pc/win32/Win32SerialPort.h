@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdexcept>
 #include "core/io/Stream.h"
+#include "core/StringBuilder.h"
 
 namespace core { namespace platform { namespace pc {
     class Win32SerialPort : public io::Stream {
@@ -65,6 +66,7 @@ namespace core { namespace platform { namespace pc {
                 throw std::runtime_error("Could not reconfigure port.");
             }
 
+            PurgeComm(_handle, PURGE_RXCLEAR | PURGE_TXCLEAR | PURGE_RXABORT | PURGE_TXABORT);
             _isOpen = true;
         }
 
@@ -86,23 +88,27 @@ namespace core { namespace platform { namespace pc {
         }
 
         size_t read(uint8_t* buffer, size_t offset, size_t count) final {
-            if (_isOpen)
+            if (!_isOpen)
                 return 0;
             int32_t n = 0;
-            ReadFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&n), NULL);
+            volatile bool error = !ReadFile(_handle, const_cast<unsigned char*>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&n), NULL);
+            if (error)
+                throw std::runtime_error("Error while reading from port.");
             return n;
         }
 
         void writeByte(uint8_t byte) final {
             int32_t bytesWritten;
-            if (_isOpen)
+            if (_isOpen) {
                 WriteFile(_handle, &byte, 1, reinterpret_cast<LPDWORD>(&bytesWritten), NULL);
+            }
         }
 
         void write(const uint8_t* buffer, size_t offset, size_t count) final {
             int32_t bytesWritten;
-            if (_isOpen)
+            if (_isOpen) {
                 WriteFile(_handle, const_cast<unsigned char *>(&buffer[offset]), count, reinterpret_cast<LPDWORD>(&bytesWritten), NULL);
+            }
 
         }
 

@@ -25,16 +25,21 @@ namespace core { namespace can { namespace obd {
         ObdValue(uint8_t pid, uint8_t a, uint8_t b, uint8_t c) : A(a), B(b), C(c), D(0), Pid(pid), DataLength(3) {}
         ObdValue(uint8_t pid, uint8_t a, uint8_t b, uint8_t c, uint8_t d) : A(a), B(b), C(c), D(d), Pid(pid), DataLength(4) {}
 
-        ObdValue(uint8_t pid, uint8_t* data, uint8_t length) : A(0), B(0), C(0), D(0), Pid(pid), DataLength(0) {
-            switch (length) {
-                case 4: D = data[3];
-                case 3: C = data[2];
-                case 2: B = data[1];
-                case 1: A = data[0];
-                default:
-                    break;
+        static ObdValue empty(uint8_t pid, uint8_t expectedLength) {
+            return ObdValue(pid, nullptr, expectedLength);
+        }
+
+        ObdValue(uint8_t pid, const uint8_t* data, uint8_t length) : A(0), B(0), C(0), D(0), Pid(pid), DataLength(min(length,4)) {
+            if (data != nullptr) {
+                switch (DataLength) {
+                    case 4: D = data[3]; [[fallthrough]];
+                    case 3: C = data[2]; [[fallthrough]];
+                    case 2: B = data[1]; [[fallthrough]];
+                    case 1: A = data[0]; [[fallthrough]];
+                    default:
+                        break;
+                }
             }
-            DataLength = length;
         }
 
         uint8_t asUint8() { return A; }

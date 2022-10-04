@@ -11,8 +11,8 @@ namespace core { namespace can { namespace obd {
     class ObdRequest {
     public:
         ObdRequest() {}
-        ObdRequest& add(uint8_t pid) {
-            add(ObdValue(pid));
+        ObdRequest& add(uint8_t pid, uint8_t length) {
+            add(ObdValue::empty(pid, length));
             return *this;
         }
 
@@ -49,7 +49,7 @@ namespace core { namespace can { namespace obd {
             return _pidCount;
         }
     private:
-        ObdValue _pid[6] = {0, 0,0 ,0,0,0};
+        ObdValue _pid[6] = {0, 0, 0, 0, 0, 0};
         uint8_t _pidCount = 0;
     };
 }}}

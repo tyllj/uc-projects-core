@@ -9,9 +9,6 @@
 #include "etl/delegate.h"
 #include "core/unique_ptr.h"
 
-#define FUTURE_RETURN(ctx, val) do {ctx.setResult(val); return;} while(1)
-#define FUTURE_FROM_MEMBER(classname, methodname) core::coop::_futureFromMember<classname, &classname::methodname>(this)
-
 namespace core { namespace coop {
     class IFuture {
     public:
@@ -31,122 +28,170 @@ namespace core { namespace coop {
         }
     };
 
-    template<typename TData, typename TResult>
-    class Future;
+    template<typename TResult>
+    struct FutureResult {
+        FutureResult(etl::optional<TResult> value, bool isCompleted) : value(value), isCompleted(isCompleted) {}
 
-    template<typename TData, typename TResult>
-    class FutureContext {
-    public:
-        FutureContext(TData data, etl::delegate<void(FutureContext<TData, TResult>&)> sliceFunc) :
-            _data(data),
-            _result(etl::nullopt),
-            _completed(false),
-            _sliceFunc(sliceFunc) { }
-
-        TData& getData() {
-            return _data;
-        }
-        void setResult(etl::optional<TResult> result) {
-            _result = result;
-            _completed = true;
-        }
-
-        etl::optional<TResult> getResult() {
-            return _result;
-        }
-
-        bool isCompleted() {
-            return _completed;
-        }
-
-    private:
-        TData _data;
-        etl::optional<TResult> _result;
-        bool _completed;
-        etl::delegate<void(FutureContext<TData, TResult>&)> _sliceFunc;
-        friend class Future<TData, TResult>;
+        etl::optional<TResult> value;
+        bool isCompleted;
     };
 
-    template<typename TData, typename TResult>
-    class Future : public IFuture {
-    public:
-        Future(TData data, etl::delegate<void(FutureContext<TData, TResult>&)> sliceFunc) :
-            _context(data, sliceFunc) { }
+    template<>
+    struct FutureResult<void> {
+        FutureResult(bool isCompleted) : isCompleted(isCompleted) {}
+        bool isCompleted;
+    };
+
+    template<typename TResult>
+    FutureResult<TResult> yieldReturn(TResult value) {
+        return FutureResult<TResult>(value, true);
+    }
+
+    FutureResult<void> yieldReturn() {
+        return FutureResult<void>(true);
+    }
+
+    template<typename TResult>
+    FutureResult<TResult> yieldContinue() {
+        return FutureResult<TResult>(etl::nullopt, false);
+    }
+
+    FutureResult<void> yieldContinue() {
+        return FutureResult<void>(false);
+    }
+
+    template<typename TResult, typename TSliceFunctor>
+    class Future;
+
+    template<typename TResult, typename TParentSliceFunctor, typename TContinuationFunctor>
+    class FutureWithContinuation : public IFuture {
+        FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation), _isCompleted(false) {
+
+        }
 
         bool runSlice() final {
-            if (!isCompleted())
-                _context._sliceFunc(_context);
-            return isCompleted();
+            if (_isCompleted)
+                return true;
+
+            if (_future.runSlice()) {
+                _continuation(_future.get());
+                _isCompleted = true;
+                return true;
+            }
         }
 
         void wait() final {
-            while (!isCompleted())
-                _context._sliceFunc(_context);
-        }
-
-        void cancel() final {
-            _context.setResult(etl::optional<TResult>());
-        }
-
-        etl::optional<TResult>& waitForResult() {
-            wait();
-            return getResult();
-        }
-
-        etl::optional<TResult>& getResult() {
-            return _context.getData();
+            while (!runSlice());
         }
 
         bool isCompleted() final {
-            return _context.isCompleted();
+            return _isCompleted;
         }
 
-        template <typename TContinuationData>
-        struct ContinuationContext {
-            ContinuationContext(FutureContext<TData, TResult>& parentContext, etl::delegate<void(TContinuationData&, etl::optional<TResult>&)> continuationAction, TContinuationData continuationData)
-                    : parentContext(parentContext), continuationAction(continuationAction), continuationData(continuationData) {}
-            FutureContext<TData, TResult>& parentContext;
-            etl::delegate<void(TContinuationData&, etl::optional<TResult>&)> continuationAction;
-            TContinuationData continuationData; // captures all data needed in continuation action.
-        };
-        template <typename TContinuationData>
-        Future<ContinuationContext<TContinuationData>, TResult> continueWith(TContinuationData data, etl::delegate<void(TContinuationData&, etl::optional<TResult>&)> continuationAction) {
-            ContinuationContext<TContinuationData> continuationContext(_context, continuationAction, data);
-            Future<ContinuationContext<TContinuationData>, TResult> t(continuationContext,
-                                                   [](FutureContext<ContinuationContext<TContinuationData>, TResult>& ctx){
-                                                       FutureContext<TData, TResult>& parentContext(ctx.getData().parentContext);
-                                                       etl::delegate<void(TContinuationData&, etl::optional<TResult>&)> continuationAction(ctx.getData().continuationAction);
-                                                       TContinuationData& continuationData(ctx.getData().continuationData);
-                                                       if (!parentContext.isCompleted()) {
-                                                           parentContext._sliceFunc(parentContext);
-                                                       }
-                                                       else if (!ctx.isCompleted()){
-                                                           continuationAction(continuationData, parentContext._result);
-                                                           ctx.setResult(parentContext.getResult());
-                                                       }
-                                                   });
-            return t;
+        void cancel() final {
+            _isCompleted = true;
         }
 
     private:
-        FutureContext<TData, TResult> _context;
+        Future<TResult, TParentSliceFunctor> _future;
+        TContinuationFunctor _continuation;
+        bool _isCompleted;
     };
 
-    template<typename T, void (T::*methodName)(void)>
-    static core::shared_ptr<IFuture> _futureFromMember(T* instance) {
-        auto backgroundTaskDelegate
-                = etl::delegate<void(coop::FutureContext<T*, void*>&)>::create([](coop::FutureContext<T*, void*> ctx) {
-                    (ctx.getData()->*methodName)();
-                });
-        return core::shared_ptr<IFuture>(new Future(instance, backgroundTaskDelegate));
-    }
+    template<typename TResult, typename TSliceFunctor>
+    class Future : public IFuture {
+    public:
+        // TSliceFunctor: FutureResult<TResult>(loopBody)(void)
+        Future(TSliceFunctor loopBody) : _functor(loopBody) {}
+        Future(TResult result) : _functor([](){}), _isCompleted(true), _result(result) {}
 
-    template<typename TFunctor>
-    static core::shared_ptr<IFuture> futureFromFunctor(TFunctor functor) {
-        auto backgroundTaskDelegate = etl::delegate<void(coop::FutureContext<TFunctor, void*>&)>::create([](coop::FutureContext<TFunctor, void*> ctx) {
-            ctx.getData()();
-        });
-        return core::shared_ptr<IFuture>(new Future(functor, backgroundTaskDelegate));
-    }
+        ~Future() {}
+
+        bool runSlice() final {
+            if (_isCompleted)
+                return true;
+
+            FutureResult<TResult> f = _functor();
+            _isCompleted = f.isCompleted;
+            _result = f.value;
+            return _isCompleted;
+        }
+
+        void wait() final {
+            while (!runSlice());
+        }
+
+        bool isCompleted() final {
+            return _isCompleted;
+        }
+
+        void cancel() final {
+            _isCompleted = true;
+        }
+
+        TResult get() {
+            if (!_isCompleted)
+                wait();
+
+            return _result.value();
+        }
+
+        shared_ptr<Future<TResult, TSliceFunctor>> share() {
+            return shared_ptr<Future<TResult, TSliceFunctor>>(new Future<TResult, TSliceFunctor> { *this });
+        }
+
+        template<typename TContinuationFunctor>
+        FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor> continueWith(TContinuationFunctor continuation) {
+            return FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor>(&this, continuation);
+        }
+
+    private:
+        TSliceFunctor _functor;
+        bool _isCompleted = false;
+        etl::optional<TResult> _result = etl::nullopt;
+    };
+
+    template<typename TSliceFunctor>
+    class Future<void, TSliceFunctor> : public IFuture {
+    public:
+        // TSliceFunctor: FutureResult<TResult>(loopBody)(void)
+        Future(TSliceFunctor loopBody) : _functor(loopBody) {}
+
+        ~Future() {}
+
+        bool runSlice() final {
+            if (_isCompleted)
+                return true;
+
+            FutureResult<void> f = _functor();
+            _isCompleted = f.isCompleted;
+            return _isCompleted;
+        }
+
+        void wait() final {
+            while (!runSlice());
+        }
+
+        bool isCompleted() final {
+            return _isCompleted;
+        }
+
+        void cancel() final {
+            _isCompleted = true;
+        }
+
+        void get() {
+            if (!_isCompleted)
+                wait();
+        }
+
+        shared_ptr<Future<void, TSliceFunctor>> share() {
+            return shared_ptr<Future<void, TSliceFunctor>>(new Future<void, TSliceFunctor> { &this});
+        }
+
+    private:
+        TSliceFunctor _functor;
+        bool _isCompleted = false;
+    };
 }}
 #endif //UC_CORE_FUTURE_H

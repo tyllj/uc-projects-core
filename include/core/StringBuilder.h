@@ -13,10 +13,11 @@
 #include "core/itoa.h"
 
 namespace core {
-    inline char _stringBuilderBuffer[255];
+    inline thread_local char _stringBuilderBuffer[255];
     class StringBuilder {
     public:
         StringBuilder() : StringBuilder(_stringBuilderBuffer, sizeof(_stringBuilderBuffer)) {}
+
         StringBuilder(char* str, size_t length) : _buffer(str), _length(length), _position(0) {}
         template<size_t n>
         StringBuilder(char (&str)[n]) : StringBuilder(str, n) {}
@@ -56,16 +57,19 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(float value, int8_t width, uint8_t decimalPlaces)  {
-            append((double) value, width, decimalPlaces);
+        StringBuilder& append(float value, int8_t minWidth, uint8_t decimalPlaces) {
+            append(static_cast<double>(value), minWidth, decimalPlaces);
             return *this;
         }
-        StringBuilder& append(double value, int8_t width, uint8_t decimalPlaces)  {
+        StringBuilder& append(double value, int8_t minWidth, uint8_t decimalPlaces) {
+            uint8_t width = decimalLength(static_cast<int32_t>(value)) + decimalPlaces;
+            width += value < 0.0 ? 2 : 1; // decimal point and minus sign.
+            width = max(width, static_cast<uint8_t>(abs(minWidth)));
             if (_position + width >= _length)
                 return *this;
 
-            core::dtostrf(value, width, decimalPlaces, &_buffer[_position]);
-            seek(width);
+            core::dtostrf(value, minWidth, decimalPlaces, &_buffer[_position]);
+            seek(cstrings::length(ptr()));
             return *this;
         }
 

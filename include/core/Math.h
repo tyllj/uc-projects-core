@@ -7,39 +7,70 @@
 #include <stdint.h>
 #include <math.h>
 
-// Function definitions are guarded to avoid clashes with their Arduino counterparts if the Arduino lib is used.
-#ifndef min
-        template<typename T>
-        T min(T val0, T val1) {
-            return val0 < val1 ? val0 : val1;
-        }
+#ifdef abs
+#undef abs
 #endif
-#ifndef max
-        template<typename T>
-        T max(T val0, T val1) {
-            return val0 > val1 ? val0 : val1;
-        }
-#endif
-#ifndef constrain
-        template<typename T>
-        T constrain(T val, T lowerLimit, T upperLimit) {
-            return min(upperLimit, max(lowerLimit, val));
-        }
-#endif
-#ifndef sq
-        template<typename T>
-        T sq(T val) {
-            return val * val;
-        }
-#endif
-#ifndef abs
-        template<typename T>
-        T abs(T val) {
-            return ((val) > 0 ? (val) : -(val));
-        }
-#endif
+template<typename T>
+inline T abs(T x) {
+    return x > 0 ? x : -x;
+}
 
-inline float mapF(float x, float in_min, float in_max, float out_min, float out_max) {
+#ifdef sq
+#undef sq
+#endif
+template<typename T>
+inline T sq(T x) {
+    return x * x;
+}
+
+#ifdef min
+#undef min
+#endif
+template<typename T, typename U>
+inline T min(T a, U b) {
+    return static_cast<T>(a < b ? a : b);
+}
+
+#ifdef max
+#undef max
+#endif
+template<typename T, typename U>
+inline T max(T a, U b) {
+    return static_cast<T>(a > b ? a : b);
+}
+
+#ifdef round
+#undef round
+#endif
+template<typename T>
+inline int32_t round(T x){
+   return x >= 0 ? (long)(x + 0.5) : (long)(x - 0.5);
+}
+
+#ifdef radians
+#undef radians
+#endif
+#define radians(deg) ((deg) * DEG_TO_RAD)
+
+#ifdef degrees
+#undef degrees
+#endif
+#define degrees(rad) ((rad) * RAD_TO_DEG)
+
+#ifdef constrain
+#undef constrain
+#endif
+template<typename T, typename U, typename V>
+inline V constrain(T x, U low, V high) {
+    return x < low ? low : x > high ? high : x;
+}
+
+inline float mapFloat(float x, float in_min, float in_max, float out_min, float out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+inline uint32_t mapInt(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_min, uint32_t out_max)
+{
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 #endif //UC_CORE_MATH_H

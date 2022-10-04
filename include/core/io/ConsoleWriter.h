@@ -2,7 +2,7 @@
 // Created by tyll on 2022-01-20.
 //
 
-#ifndef UC_CORE_CONSOLEWRITER_CPP
+#ifndef UC_CORE_CONSOLEWRITER_H
 #define UC_CORE_CONSOLEWRITER_H
 
 #include <stdio.h>
@@ -14,9 +14,6 @@ namespace core { namespace io {
         public:
             void write(char c) final {
                 putchar(c);
-            }
-            virtual void write(const  char* str) final {
-                puts(str);
             }
             virtual void flush() {}
         };

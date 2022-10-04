@@ -6,6 +6,7 @@
 #define UC_CORE_USBCANSEEED_H
 
 #include <stdint.h>
+#include "core/Math.h"
 //#include <unistd.h>
 
 #include "core/platform/pc/Usb.h"
@@ -51,8 +52,9 @@ namespace core { namespace can {
         UsbCanSeeed(core::io::Stream& serialPort, uint32_t baudRate = 500000) :
             _serialPort(serialPort),
             _filter(0x00),
-            _mask(0x00),
+            _mask(0x7FF),
             _speed(canusb_int_to_speed(baudRate)) {
+            while(serialPort.readByte() != -1);
             init();
         }
 
@@ -61,11 +63,15 @@ namespace core { namespace can {
         }
 
         virtual void filter(canid_t filter) final {
+            if (_filter == filter)
+                return;
             _filter = filter;
             init();
         }
 
         virtual void mask(canid_t mask) final {
+            if (_mask == mask)
+                return;
             _mask = mask;
             init();
         }
@@ -104,7 +110,7 @@ namespace core { namespace can {
 
             /* Last byte: End of frame */
             data_frame[data_frame_len++] = 0x55;
-
+            enforceInitTimegap();
             frame_send(data_frame, data_frame_len);
         }
 
@@ -115,6 +121,8 @@ namespace core { namespace can {
             while (_serialPort.read(&byte, 1) == 1) {
                 _serialFrame[_serialFrameLength++] = byte;
                 frame_completed = frame_is_complete(_serialFrame, _serialFrameLength);
+                if (frame_completed)
+                    break;
             }
 
             if (frame_completed && (_serialFrameLength == 20) && (_serialFrame[0] == 0xaa) && (_serialFrame[1] == 0x55)) {
@@ -142,7 +150,15 @@ namespace core { namespace can {
             return frame_len;
         }
 
+        void enforceInitTimegap() {
+            const uint64_t timegap = 50;
+            uint64_t millisSinceInit = core::millisPassedSince(_lastInit);
+            if (millisSinceInit < timegap)
+                core::sleepms(timegap - millisSinceInit);
+        }
+
         void init() {
+            enforceInitTimegap();
             int cmd_frame_len;
             unsigned char cmd_frame[20];
             CANUSB_MODE mode = CANUSB_MODE_NORMAL;
@@ -166,7 +182,7 @@ namespace core { namespace can {
             cmd_frame[cmd_frame_len++] = 0; /* Mask ID 29-bit not handled. */
             cmd_frame[cmd_frame_len++] = 0; /* Mask ID 29-bit not handled. */
             cmd_frame[cmd_frame_len++] = mode;
-            cmd_frame[cmd_frame_len++] = 0x01;
+            cmd_frame[cmd_frame_len++] = 0; // Reference impl says this should be 01, but USBCAN app sends 00 here.
             cmd_frame[cmd_frame_len++] = 0;
             cmd_frame[cmd_frame_len++] = 0;
             cmd_frame[cmd_frame_len++] = 0;
@@ -174,6 +190,8 @@ namespace core { namespace can {
             cmd_frame[cmd_frame_len++] = generate_checksum(&cmd_frame[2], 17);
 
             _serialPort.write(cmd_frame, 0, cmd_frame_len);
+
+            _lastInit = core::millis();
         }
 
         static CANUSB_SPEED canusb_int_to_speed(int speed) {
@@ -253,8 +271,9 @@ namespace core { namespace can {
         canid_t _filter;
         canid_t _mask;
         CANUSB_SPEED _speed;
-        uint8_t _serialFrame[32];
-        uint8_t _serialFrameLength;
+        uint8_t _serialFrame[32] = {};
+        uint8_t _serialFrameLength = 0;
+        uint64_t _lastInit = 0;
     };
 
 

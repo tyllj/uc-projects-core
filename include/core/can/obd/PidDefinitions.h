@@ -9,7 +9,7 @@
 
 namespace core { namespace can { namespace obd {
     constexpr uint8_t getDataLengthForPid(uint8_t pid) {
-        return 0;
+        return 2;
     }
 }}}
 

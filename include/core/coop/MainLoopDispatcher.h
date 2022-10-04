@@ -30,6 +30,7 @@ namespace core { namespace coop {
             _tasks.push_back(future);
         }
 
+
     private:
         etl::vector<core::shared_ptr<IFuture>, MAX_TASKS> _tasks;
         size_t _current;

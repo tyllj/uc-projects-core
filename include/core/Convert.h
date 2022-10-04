@@ -34,6 +34,21 @@ namespace core { namespace convert {
         return static_cast<int32_t>(strtol(str, nullptr, base));
     }
 
+    template<typename T>
+    inline StringBuilder toString(T value) {
+        return StringBuilder().append(value);
+    }
+
+    template<typename T>
+    inline void toString(T value, char * buffer, size_t size) {
+        StringBuilder(buffer, size).append(value);
+    }
+
+    template<typename T, size_t destinationSize>
+    inline void toString(T value, char (&destination)[destinationSize]) {
+        StringBuilder(destination, destinationSize).append(value);
+    }
+
     inline void toHexString(uint8_t* data, size_t n, char* destination, size_t destinationSize) {
         StringBuilder sb(destination, destinationSize);
         for (size_t i = 0; i < n; i++)
@@ -61,7 +76,6 @@ namespace core { namespace convert {
     inline size_t fromHexString(const char* hexString, uint8_t (&bytes)[n]) {
         return fromHexString(hexString, bytes, n);
     }
-
 
 }}
 #endif //UC_CORE_CONVERT_H
