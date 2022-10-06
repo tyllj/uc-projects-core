@@ -27,57 +27,42 @@
 #include "core/can/obd/OnBoardDiagnostics.h"
 #include "core/Tick.h"
 #include "core/coop/DispatcherTimer.h"
+#include "core/platform/pc/FileSystemImpl.h"
 
 
 int main() {
+
     core::initializeEnvironment();
     core::coop::MainLoopDispatcher<16> dispatcher;
 
     core::CString portName = core::platform::pc::usb::findCh340();
     if (core::cstrings::isNullOrEmpty(portName))
         throw std::runtime_error("CAN interface not found.");
-    {
-        core::platform::pc::SerialPort resetPort(portName);
-        resetPort.open();
-        core::sleepms(200);
-        resetPort.close();
-        core::sleepms(200);
-    }
+
     core::platform::pc::SerialPort usb(portName);
     usb.baudRate(core::can::USBCAN_SERIAL_BAUD);
     usb.open();
-    core::sleepms(500);
     core::can::UsbCanSeeed can(usb);
-    core::sleepms(500);
 
-/*
-    core::platform::pc::SerialPort tty("COM3");
-    tty.baudRate(38400);
-    tty.open();
-
-    core::can::elm::ElmCommandInterpreter elm(dispatcher, tty, can);
-*/
     core::io::ConsoleWriter out;
     core::can::obd::OnBoardDiagnostics obd(dispatcher, can);
 
     core::can::obd::ObdRequest query;
     query.add(0x0C, 2);
-    for (;;) {
-        auto f = obd.getCurrentData(query).share();
+    auto f = obd.getCurrentData(query).share();
 
-        dispatcher.run(f);
-        for (;;) {
-            dispatcher.dispatchOne();
-            core::sleepms(10);
-            if (f->isCompleted()) {
-                auto rpm = f->get().getByPid(0x0C).asUint16() / 4;
-                out.writeLine(core::StringBuilder().append("EngineSpeed=").append(rpm));
-                break;
-            }
+    dispatcher.run(f);
+    for (;;) {
+        dispatcher.dispatchOne();
+        core::sleepms(10);
+        if (f->isCompleted()) {
+            auto rpm = f->get().getByPid(0x0C).asUint16() / 4;
+            out.writeLine(core::StringBuilder() + "EngineSpeed=" + rpm);
+            auto nextRequest = obd.getCurrentData(query).share();
+            f.swap(nextRequest);
         }
     }
     system("pause");
-
 }
 
 #endif

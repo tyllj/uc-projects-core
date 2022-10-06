@@ -13,7 +13,7 @@ set_source_files_properties(lib/iso15765-canbus/src/lib_iso15765.c PROPERTIES CO
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 add_compile_definitions(CORE_TESTAPP)
 add_compile_definitions(ETL_NO_STL ETL_FORCE_STD_INITIALIZER_LIST ETL_THROW_EXCEPTIONS)
-add_executable(main main.cpp)
+add_executable(main testapp.cpp)
 target_sources(main PUBLIC src/platform/pc/env.cpp)
 target_sources(main PUBLIC lib/iso15765-canbus/src/lib_iso15765.c lib/iso15765-canbus/src/lib_iqueue.c)
 

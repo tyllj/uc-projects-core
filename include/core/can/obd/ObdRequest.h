@@ -31,7 +31,7 @@ namespace core { namespace can { namespace obd {
             }
         }
 
-        ObdValue getByPid(uint8_t pid) {
+        ObdValue getByPid(uint8_t pid) const {
             for (size_t i = 0; i < _pidCount; i++)
                 if (_pid[i].Pid == pid)
                     return _pid[i];

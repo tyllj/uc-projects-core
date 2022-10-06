@@ -49,10 +49,11 @@ namespace core { namespace can {
         void send(uint8_t* data, uint16_t length);
         bool available() const;
         bool tryReceive(IsoTpPacket& outPacket) const;
+        void receiveAndTransmit();
     private:
         iso15765_t createIsoTpHandler() const;
         void startBackgroundWorker(core::coop::IDispatcher &dispatcher);
-        void backgroundReceive();
+
 
     private:
         ICanInterface& _can;
@@ -175,7 +176,7 @@ extern "C" {
         return true;
     }
 
-    void IsoTpSocket::backgroundReceive()  {
+    void IsoTpSocket::receiveAndTransmit()  {
         CanFrame f;
         if (_can.tryReadFrame(f) /* && f.id == _core_can_isotp_glue_rxid */ ) {
             canbus_frame_t cf;
@@ -186,12 +187,12 @@ extern "C" {
             memcpy(cf.dt, f.payload, f.length);
             iso15765_enqueue(&_isotp, &cf);
         }
+        iso15765_process(&_isotp);
     }
 
     void IsoTpSocket::startBackgroundWorker(coop::IDispatcher &dispatcher) {
         auto backgroundLambda = [self = this](){
-            self->backgroundReceive();
-            iso15765_process(&self->_isotp);
+            self->receiveAndTransmit();
             return coop::yieldContinue();
         };
 

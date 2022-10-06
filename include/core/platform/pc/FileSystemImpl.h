@@ -16,8 +16,8 @@
 #include "core/io/FileSystemInfo.h"
 #include "core/io/Stream.h"
 
-namespace core { namespace io {
-    class UnixFileStream : public Stream {
+namespace core { namespace platform { namespace pc {
+class UnixFileStream : public core::io::Stream {
     public:
         UnixFileStream(const char* path, core::io::FileMode mode) {
             _file = fopen(path, fileModeToString(mode));
@@ -66,12 +66,12 @@ namespace core { namespace io {
     private:
         static const char* fileModeToString(core::io::FileMode mode) {
             switch (mode) {
-                case READ: return "rb";
-                case WRITE: return "wb";
-                case APPEND: return "ab";
-                case READ_UPDATE: return "r+b";
-                case WRITE_UPDATE: return "w+b";
-                case APPEND_UPDATE: return "a+b";
+                case core::io::READ: return "rb";
+                case core::io::WRITE: return "wb";
+                case core::io::APPEND: return "ab";
+                case core::io::READ_UPDATE: return "r+b";
+                case core::io::WRITE_UPDATE: return "w+b";
+                case core::io::APPEND_UPDATE: return "a+b";
                 default: return "";
             }
         }
@@ -80,10 +80,10 @@ namespace core { namespace io {
         FILE* _file;
     };
 
-    class NativeFileSystem : public FileSystem {
+    class NativeFileSystem : public core::io::FileSystem {
     public:
-        core::shared_ptr<Stream> open(const char* path, core::io::FileMode mode) final {
-            return core::shared_ptr<Stream>(new UnixFileStream(path, mode));
+        core::shared_ptr<core::io::Stream> open(const char* path, core::io::FileMode mode) final {
+            return core::shared_ptr<core::io::Stream>(new UnixFileStream(path, mode));
         };
 
         bool exists(const char* path) const final {
@@ -92,8 +92,8 @@ namespace core { namespace io {
             return false;
         };
 
-        uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = FS_TAKEALL, FileSystemEnumerationOptions options =
-        FILES | DIRECTORIES) final {
+        uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = core::io::FS_TAKEALL, core::io::FileSystemEnumerationOptions options =
+        core::io::FILES | core::io::DIRECTORIES) final {
             uint16_t i = 0;
             uint16_t j = 0;
             DIR *d;
@@ -106,12 +106,12 @@ namespace core { namespace io {
                         if (i - skip < take) {
                             j++;
                             stat(fsentry->d_name, &filestat);
-                            FileSystemEntryType type;
-                            type = S_ISDIR(filestat.st_mode) ? FS_DIRECTORY : FS_FILE;
+                            core::io::FileSystemEntryType type;
+                            type = S_ISDIR(filestat.st_mode) ? core::io::FS_DIRECTORY : core::io::FS_FILE;
 
                             core::io::FileSystemInfo fsInfo(*this, fsentry->d_name, type);
-                            if (((options | FILES) && (type == FS_FILE)) ||
-                                    ((options | DIRECTORIES) && (type == FS_DIRECTORY)))
+                            if (((options | core::io::FILES) && (type == core::io::FS_FILE)) ||
+                                    ((options | core::io::DIRECTORIES) && (type == core::io::FS_DIRECTORY)))
                                 action(fsInfo);
                         }
                         else
@@ -124,6 +124,6 @@ namespace core { namespace io {
             return j;
         };
     };
-}}
+}}}
 
 #endif //UC_CORE_FILESYSTEMIMPL_H

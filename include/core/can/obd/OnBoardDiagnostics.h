@@ -38,17 +38,20 @@ namespace core { namespace can { namespace obd {
             initTp();
             _isotp->send(queryMsg, i + 1);
 
-            auto backgroundWorkerDelegate = [self = this](){
+            auto backgroundWorkerDelegate = [self = this, request = request](){
                 IsoTpSocket& isotp = self->_isotp.value();
+                isotp.receiveAndTransmit();
                 IsoTpPacket p;
-                if (isotp.tryReceive(p)/* && p.getData()[0] == OBD_GET_CURRENT_DATA + 40*/) {
+                if (isotp.tryReceive(p) && p.getData()[0] == OBD_GET_CURRENT_DATA + 40) {
+                    ObdRequest response = request;
                     size_t j = 1; // skip first byte, which is service id.
-                    ObdRequest response = {};
                     while (j < p.length()) {
-                        ObdValue pid( p.getData()[j++]);
-                        for (uint8_t k = 0; k < getDataLengthForPid(pid.Pid); k++)
-                            pid[k] = p.getData()[j++];
-                        response.add(pid);
+                        uint8_t pid = p.getData()[j++];
+                        uint8_t pidLength = request.getByPid(pid).DataLength;
+                        ObdValue pidValue(pid, nullptr, pidLength);
+                        for (uint8_t k = 0; k < pidLength; k++)
+                            pidValue[k] = p.getData()[j++]; // PIDs with length > 4 are handled safely by the [] operator, but will not yield useful results
+                        response.update(pidValue);
                     }
                     self->deinitTp();
                     return coop::yieldReturn(response);

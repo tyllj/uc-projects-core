@@ -58,9 +58,9 @@ namespace core {
         }
 
         StringBuilder& append(float value, int8_t minWidth, uint8_t decimalPlaces) {
-            append(static_cast<double>(value), minWidth, decimalPlaces);
-            return *this;
+            return append(static_cast<double>(value), minWidth, decimalPlaces);
         }
+
         StringBuilder& append(double value, int8_t minWidth, uint8_t decimalPlaces) {
             uint8_t width = decimalLength(static_cast<int32_t>(value)) + decimalPlaces;
             width += value < 0.0 ? 2 : 1; // decimal point and minus sign.
@@ -71,6 +71,17 @@ namespace core {
             core::dtostrf(value, minWidth, decimalPlaces, &_buffer[_position]);
             seek(cstrings::length(ptr()));
             return *this;
+        }
+
+        StringBuilder& append(float value) {
+            return append(static_cast<double>(value));
+        }
+
+        StringBuilder& append(double value) {
+            uint8_t width = decimalLength(static_cast<int32_t>(value)) + 2;
+            width += value < 0.0 ? 2 : 1;
+            uint8_t decimalPlaces = width == 3 ? 2 : 1;
+            return append(value, width, decimalPlaces);
         }
 
         StringBuilder& append(int32_t value, int8_t width, char padding = ' ') {
@@ -348,6 +359,16 @@ namespace core {
 
         void lineBreak(::core::cstrings::NewLineMode mode) {
             append(::core::cstrings::newLine(mode));
+        }
+
+        template<typename T>
+        StringBuilder& operator+(T var) {
+            return this->append(var);
+        }
+
+        template<typename T>
+        StringBuilder& operator+=(T var) {
+            return append(var);
         }
 
         void clear() {

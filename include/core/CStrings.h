@@ -58,6 +58,11 @@ namespace core { namespace cstrings {
         return c;
     }
 
+    template<size_t n>
+    inline uint8_t split(char* str, const char spliterator, char* (&dest)[n]) {
+        return split(str, spliterator, dest, n);
+    }
+
     inline void removeWhitespaces(char* destination, const char* source) {
         while (*source != '\0') {
             if(!isspace(*source)) {

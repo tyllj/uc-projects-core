@@ -14,6 +14,11 @@ namespace core { namespace io {
              */
             virtual int32_t read() = 0;
 
+            template<size_t n>
+            size_t readLine(char (&buffer)[n]) {
+                return readLine(buffer, n);
+            }
+
             /*
              * Reads a line of characters from the text reader and returns the data as a string.
              */
