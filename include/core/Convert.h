@@ -35,8 +35,8 @@ namespace core { namespace convert {
     }
 
     template<typename T>
-    inline StringBuilder toString(T value) {
-        return StringBuilder().append(value);
+    inline core::CString toString(T value) {
+        return StringBuilder().append(value).toString();
     }
 
     template<typename T>

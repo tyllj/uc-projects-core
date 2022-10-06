@@ -16,7 +16,7 @@ namespace core { namespace cli {
 
                 core::StringBuilder sb;
                 core::io::path::combine(sb, workingDirectory.getFullName(), argv[0]);
-                const char* path = sb.toCString();
+                const char* path = sb.toString();
                 core::io::FileInfo file(workingDirectory, path);
                 if(file.exists()) {
                     core::shared_ptr<core::io::Stream> fileStream = file.open(io::READ);

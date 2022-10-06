@@ -77,7 +77,7 @@ namespace core { namespace can { namespace elm {
                     _out.write(c);
             }
             if (c == CR) {
-                dispatchCommand(_prompt.toCString());
+                dispatchCommand(_prompt);
                 _prompt.clear();
                 if (_state == READY)
                     beginAcceptInput();

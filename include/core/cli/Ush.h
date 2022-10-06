@@ -110,7 +110,7 @@ namespace core { namespace cli {
             core::StringBuilder sb;
             core::io::path::combine(sb, workingDirectory.getFullName(), path);
 
-            io::DirectoryInfo wd(workingDirectory, sb.toCString());
+            io::DirectoryInfo wd(workingDirectory, sb);
             if (wd.exists()) {
                 _workingDirectory = wd;
             } else {

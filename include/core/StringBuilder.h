@@ -13,7 +13,7 @@
 #include "core/itoa.h"
 
 namespace core {
-    inline thread_local char _stringBuilderBuffer[255];
+    inline thread_local char _stringBuilderBuffer[256];
     class StringBuilder {
     public:
         StringBuilder() : StringBuilder(_stringBuilderBuffer, sizeof(_stringBuilderBuffer)) {}
@@ -23,7 +23,6 @@ namespace core {
         StringBuilder(char (&str)[n]) : StringBuilder(str, n) {}
         size_t length() const { return _position; }
 
-        operator const char*() const { return toCString(); }
 
         StringBuilder& append(const char* str) {
             size_t i = 0;
@@ -376,15 +375,20 @@ namespace core {
 			_buffer[_position] = '\0';
         }
 
-        const char* toCString() const { return _buffer;}
-
-        core::CString toSharedCString() {
-            return core::cstrings::toSharedCString(toCString());
+        void toString(char * buffer, size_t n) {
+            strncpy(buffer, _buffer, n - 1);
+            buffer[n] = 0;
         }
 
-        operator const char*() {
-            return _buffer;
+        template<size_t n>
+        void toString(char (&buffer)[n]) {
+            toString(buffer, n);
         }
+
+        core::CString toString() {
+            return core::cstrings::toSharedCString(_buffer);
+        }
+        operator const char*() const { return _buffer; }
 
     private:
         inline char* ptr() const { return &_buffer[_position]; }
