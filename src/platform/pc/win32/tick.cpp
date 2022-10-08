@@ -10,7 +10,7 @@
 void core::hal::sleepms(uint64_t delay) { Sleep(delay); }
 
 uint64_t core::hal::millis() {
-    return GetTickCount();
+    return GetTickCount64();
 }
 
 #endif

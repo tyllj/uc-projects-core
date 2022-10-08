@@ -2,15 +2,13 @@
 // Created by tyll on 2022-10-01.
 //
 
-#ifndef UC_CORE_OBDVALUE_H
-#define UC_CORE_OBDVALUE_H
+#ifndef UC_CORE_OBDPIDVALUE_H
+#define UC_CORE_OBDPIDVALUE_H
 
 #include <stdint.h>
 
 namespace core { namespace can { namespace obd {
-
-
-    struct ObdValue {
+    struct ObdPidValue {
     public:
         uint8_t A = 0;
         uint8_t B = 0;
@@ -19,17 +17,17 @@ namespace core { namespace can { namespace obd {
         uint8_t Pid = 0xFF;
         uint8_t DataLength = 0;
     public:
-        ObdValue(uint8_t pid) : A(0), B(0), C(0), D(0), Pid(pid), DataLength(0) {}
-        ObdValue(uint8_t pid, uint8_t a) : A(a), B(0), C(0), D(0), Pid(pid), DataLength(1) {}
-        ObdValue(uint8_t pid, uint8_t a, uint8_t b) : A(a), B(b), C(0), D(0), Pid(pid), DataLength(2) {}
-        ObdValue(uint8_t pid, uint8_t a, uint8_t b, uint8_t c) : A(a), B(b), C(c), D(0), Pid(pid), DataLength(3) {}
-        ObdValue(uint8_t pid, uint8_t a, uint8_t b, uint8_t c, uint8_t d) : A(a), B(b), C(c), D(d), Pid(pid), DataLength(4) {}
+        ObdPidValue(uint8_t pid) : A(0), B(0), C(0), D(0), Pid(pid), DataLength(0) {}
+        ObdPidValue(uint8_t pid, uint8_t a) : A(a), B(0), C(0), D(0), Pid(pid), DataLength(1) {}
+        ObdPidValue(uint8_t pid, uint8_t a, uint8_t b) : A(a), B(b), C(0), D(0), Pid(pid), DataLength(2) {}
+        ObdPidValue(uint8_t pid, uint8_t a, uint8_t b, uint8_t c) : A(a), B(b), C(c), D(0), Pid(pid), DataLength(3) {}
+        ObdPidValue(uint8_t pid, uint8_t a, uint8_t b, uint8_t c, uint8_t d) : A(a), B(b), C(c), D(d), Pid(pid), DataLength(4) {}
 
-        static ObdValue empty(uint8_t pid, uint8_t expectedLength) {
-            return ObdValue(pid, nullptr, expectedLength);
+        static ObdPidValue empty(uint8_t pid, uint8_t expectedLength) {
+            return ObdPidValue(pid, nullptr, expectedLength);
         }
 
-        ObdValue(uint8_t pid, const uint8_t* data, uint8_t length) : A(0), B(0), C(0), D(0), Pid(pid), DataLength(min(length,4)) {
+        ObdPidValue(uint8_t pid, const uint8_t* data, uint8_t length) : A(0), B(0), C(0), D(0), Pid(pid), DataLength(min(length, 4)) {
             if (data != nullptr) {
                 switch (DataLength) {
                     case 4: D = data[3]; [[fallthrough]];
@@ -58,9 +56,9 @@ namespace core { namespace can { namespace obd {
 
     };
 
-    static inline const ObdValue InvalidPid(0xFF);
+    static inline const ObdPidValue InvalidPid(0xFF);
 
-    bool isInvalidPid(ObdValue value) { return value.Pid == 0xFF; }
+    bool isInvalidPid(ObdPidValue value) { return value.Pid == 0xFF; }
 }}}
 
-#endif //UC_CORE_OBDVALUE_H
+#endif //UC_CORE_OBDPIDVALUE_H

@@ -11,6 +11,7 @@
 #include "etl/optional.h"
 #include "ObdRequest.h"
 #include "PidDefinitions.h"
+#include "ObdTroubleCode.h"
 
 namespace core { namespace can { namespace obd {
 
@@ -30,15 +31,14 @@ namespace core { namespace can { namespace obd {
         }
 
         auto getCurrentData(ObdRequest request) {
-            uint8_t queryMsg[7] = {0};
-            queryMsg[0] = OBD_GET_CURRENT_DATA;
+            uint8_t queryMsg[7] = {OBD_GET_CURRENT_DATA};
             uint8_t i = 0;
             for (; i < request.count(); i++)
                 queryMsg[i + 1] = request.at(i).Pid;
             initTp();
             _isotp->send(queryMsg, i + 1);
 
-            auto backgroundWorkerDelegate = [self = this, request = request](){
+            auto receiveReply = [self = this, request = request](){
                 IsoTpSocket& isotp = self->_isotp.value();
                 isotp.receiveAndTransmit();
                 IsoTpPacket p;
@@ -48,7 +48,7 @@ namespace core { namespace can { namespace obd {
                     while (j < p.length()) {
                         uint8_t pid = p.getData()[j++];
                         uint8_t pidLength = request.getByPid(pid).DataLength;
-                        ObdValue pidValue(pid, nullptr, pidLength);
+                        ObdPidValue pidValue(pid, nullptr, pidLength);
                         for (uint8_t k = 0; k < pidLength; k++)
                             pidValue[k] = p.getData()[j++]; // PIDs with length > 4 are handled safely by the [] operator, but will not yield useful results
                         response.update(pidValue);
@@ -59,7 +59,35 @@ namespace core { namespace can { namespace obd {
                 return coop::yieldContinue<ObdRequest>();
             };
 
-            return core::coop::Future<ObdRequest, decltype(backgroundWorkerDelegate)>(backgroundWorkerDelegate);
+            return core::coop::Future<ObdRequest, decltype(receiveReply)>(receiveReply);
+        }
+
+        auto getStoredTroubleCodes(ObdTroubleCode* destination, size_t limit) {
+            uint8_t queryMsg[] = {OBD_GET_DTC};
+            initTp();
+            _isotp->send(queryMsg, sizeof(queryMsg));
+            auto receiveReply = [self = this, destination = destination, limit = limit](){
+                IsoTpSocket& isotp = self->_isotp.value();
+                isotp.receiveAndTransmit();
+                IsoTpPacket p;
+                if (isotp.tryReceive(p) && p.getData()[0] == OBD_GET_DTC + 40) {
+                    size_t i = 0;
+                    size_t j = 1; // skip first byte, which is service id.
+                    while (j < p.length() && i < limit) {
+                        destination[i++] = { p.getData()[j++], p.getData()[j++]};
+                    }
+                    self->deinitTp();
+                    return coop::yieldReturn();
+                }
+                return coop::yieldContinue();
+            };
+
+            return core::coop::Future<void, decltype(receiveReply)>(receiveReply);
+        }
+
+        template<size_t n>
+        auto getStoredTroubleCodes(ObdTroubleCode (&destination)[n]) {
+            return getStoredTroubleCodes(destination, n);
         }
 
     private:

@@ -337,7 +337,7 @@ namespace core {
         uint8_t decimalLength(int32_t value) const {
             if (value <= INT16_MAX && value >= INT16_MIN)
                 return decimalLength((int16_t) value);
-            if (value < 0) {
+            if (value >= 0) {
                 uint8_t length = 0;
                 for (int32_t i = 1; i <= value; i *= 10) {
                     length++;

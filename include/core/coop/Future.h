@@ -65,6 +65,7 @@ namespace core { namespace coop {
 
     template<typename TResult, typename TParentSliceFunctor, typename TContinuationFunctor>
     class FutureWithContinuation : public IFuture {
+    public:
         FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation), _isCompleted(false) {
 
         }
@@ -94,6 +95,42 @@ namespace core { namespace coop {
 
     private:
         Future<TResult, TParentSliceFunctor> _future;
+        TContinuationFunctor _continuation;
+        bool _isCompleted;
+    };
+
+    template<typename TParentSliceFunctor, typename TContinuationFunctor>
+    class FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor> : public IFuture {
+    public:
+        FutureWithContinuation(Future<void, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation), _isCompleted(false) {
+
+        }
+
+        bool runSlice() final {
+            if (_isCompleted)
+                return true;
+
+            if (_future.runSlice()) {
+                _continuation();
+                _isCompleted = true;
+                return true;
+            }
+        }
+
+        void wait() final {
+            while (!runSlice());
+        }
+
+        bool isCompleted() final {
+            return _isCompleted;
+        }
+
+        void cancel() final {
+            _isCompleted = true;
+        }
+
+    private:
+        Future<void, TParentSliceFunctor> _future;
         TContinuationFunctor _continuation;
         bool _isCompleted;
     };
@@ -142,7 +179,7 @@ namespace core { namespace coop {
 
         template<typename TContinuationFunctor>
         FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor> continueWith(TContinuationFunctor continuation) {
-            return FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor>(&this, continuation);
+            return FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor>(*this, continuation);
         }
 
     private:
@@ -186,7 +223,12 @@ namespace core { namespace coop {
         }
 
         shared_ptr<Future<void, TSliceFunctor>> share() {
-            return shared_ptr<Future<void, TSliceFunctor>>(new Future<void, TSliceFunctor> { &this});
+            return shared_ptr<Future<void, TSliceFunctor>>(new Future<void, TSliceFunctor> { *this});
+        }
+
+        template<typename TContinuationFunctor>
+        FutureWithContinuation<void, TSliceFunctor, TContinuationFunctor> continueWith(TContinuationFunctor continuation) {
+            return FutureWithContinuation<void, TSliceFunctor, TContinuationFunctor>(*this, continuation);
         }
 
     private:
