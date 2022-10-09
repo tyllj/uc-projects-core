@@ -12,7 +12,7 @@ namespace core { namespace can { namespace obd {
     public:
         ObdRequest() {}
         ObdRequest& add(uint8_t pid, uint8_t length) {
-            add(ObdPidValue::ObdPidValue(pid, length));
+            add( ObdPidValue::empty(pid, length));
             return *this;
         }
 

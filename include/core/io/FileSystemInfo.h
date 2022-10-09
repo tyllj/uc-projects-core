@@ -52,7 +52,7 @@ namespace core { namespace io {
 
     private:
         core::io::FileSystem* _fileSystem;
-        core::unique_ptr<char[]> _fullName;
+        core::shared_ptr<char[]> _fullName;
         FileSystemEntryType _type;
 
         friend class DirectoryInfo;

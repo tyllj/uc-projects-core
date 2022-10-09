@@ -74,7 +74,11 @@ namespace core { namespace can { namespace obd {
                     size_t i = 0;
                     size_t j = 1; // skip first byte, which is service id.
                     while (j < p.length() && i < limit) {
-                        destination[i++] = { p.getData()[j++], p.getData()[j++]};
+                        auto a = p.getData()[j];
+                        j++;
+                        auto b = p.getData()[j];
+                        j++;
+                        destination[i++] = { a, b};
                     }
                     self->deinitTp();
                     return coop::yieldReturn();
