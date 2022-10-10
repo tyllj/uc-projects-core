@@ -7,7 +7,7 @@
 
 #include "etl/optional.h"
 #include "etl/delegate.h"
-#include "core/unique_ptr.h"
+#include "core/shared_ptr.h"
 
 namespace core { namespace coop {
     class IFuture {
