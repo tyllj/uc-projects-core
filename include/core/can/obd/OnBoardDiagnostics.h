@@ -38,7 +38,7 @@ namespace core { namespace can { namespace obd {
             initTp();
             _isotp->send(queryMsg, i + 1);
 
-            auto receiveReply = [self = this, request = request](){
+            return core::coop::async([self = this, request = request](){
                 IsoTpSocket& isotp = self->_isotp.value();
                 isotp.receiveAndTransmit();
                 IsoTpPacket p;
@@ -57,16 +57,15 @@ namespace core { namespace can { namespace obd {
                     return coop::yieldReturn(response);
                 }
                 return coop::yieldContinue<ObdRequest>();
-            };
-
-            return core::coop::Future<ObdRequest, decltype(receiveReply)>(receiveReply);
+            });
         }
 
         auto getStoredTroubleCodes(ObdTroubleCode* destination, size_t limit) {
             uint8_t queryMsg[] = {OBD_GET_DTC};
             initTp();
             _isotp->send(queryMsg, sizeof(queryMsg));
-            auto receiveReply = [self = this, destination = destination, limit = limit](){
+
+            return core::coop::async([self = this, destination = destination, limit = limit](){
                 IsoTpSocket& isotp = self->_isotp.value();
                 isotp.receiveAndTransmit();
                 IsoTpPacket p;
@@ -84,9 +83,7 @@ namespace core { namespace can { namespace obd {
                     return coop::yieldReturn();
                 }
                 return coop::yieldContinue();
-            };
-
-            return core::coop::Future<void, decltype(receiveReply)>(receiveReply);
+            });
         }
 
         template<size_t n>

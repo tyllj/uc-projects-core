@@ -191,12 +191,11 @@ extern "C" {
     }
 
     void IsoTpSocket::startBackgroundWorker(coop::IDispatcher &dispatcher) {
-        auto backgroundLambda = [self = this](){
+        _backgroundWorkerTask = core::coop::async([self = this](){
             self->receiveAndTransmit();
             return coop::yieldContinue();
-        };
+        }).share();
 
-        _backgroundWorkerTask = shared_ptr<coop::IFuture>(new coop::Future<void, decltype(backgroundLambda)>(backgroundLambda));
         dispatcher.run(_backgroundWorkerTask);
     }
 }}

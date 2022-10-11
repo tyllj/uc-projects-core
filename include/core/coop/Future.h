@@ -8,6 +8,7 @@
 #include "etl/optional.h"
 #include "etl/delegate.h"
 #include "core/shared_ptr.h"
+#include "core/Tick.h"
 
 namespace core { namespace coop {
     class IFuture {
@@ -34,12 +35,14 @@ namespace core { namespace coop {
 
         etl::optional<TResult> value;
         bool isCompleted;
+        typedef TResult resultType;
     };
 
     template<>
     struct FutureResult<void> {
         FutureResult(bool isCompleted) : isCompleted(isCompleted) {}
         bool isCompleted;
+        typedef void resultType;
     };
 
     template<typename TResult>
@@ -79,6 +82,7 @@ namespace core { namespace coop {
                 _isCompleted = true;
                 return true;
             }
+            return false;
         }
 
         void wait() final {
@@ -91,6 +95,10 @@ namespace core { namespace coop {
 
         void cancel() final {
             _isCompleted = true;
+        }
+
+        shared_ptr<FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor>> share() {
+            return shared_ptr<FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor>>(new FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor> { *this });
         }
 
     private:
@@ -115,6 +123,7 @@ namespace core { namespace coop {
                 _isCompleted = true;
                 return true;
             }
+            return false;
         }
 
         void wait() final {
@@ -127,6 +136,10 @@ namespace core { namespace coop {
 
         void cancel() final {
             _isCompleted = true;
+        }
+
+        shared_ptr<FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>> share() {
+            return shared_ptr<FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>>(new FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor> { *this });
         }
 
     private:
@@ -235,5 +248,19 @@ namespace core { namespace coop {
         TSliceFunctor _functor;
         bool _isCompleted = false;
     };
+
+    template<typename TSliceFunc>
+    auto async(TSliceFunc sliceFunc) {
+        using resultType = typename decltype(sliceFunc())::resultType;
+        return Future<resultType ,TSliceFunc>(sliceFunc);
+    }
+
+    auto delayms(uint64_t millis) {
+        return async( [start = core::millis(), delay = millis]()  {
+            if (core::millisPassedSince(start) >= delay)
+                return yieldReturn();
+            return yieldContinue();
+        });
+    }
 }}
 #endif //UC_CORE_FUTURE_H

@@ -14,15 +14,15 @@ namespace core { namespace coop {
     template<typename TFunctor>
     class DispatcherTimer {
     public:
-        DispatcherTimer(TFunctor onTick, uint64_t interval) {
-            auto timerDelegate = [&last = _last, interval, onTick](){
+        DispatcherTimer(IDispatcher& dispatcher, uint64_t interval, TFunctor onTick) {
+            _future = core::coop::async([&last = _last, interval, onTick](){
                 if (millisPassedSince(last) >= interval) {
                     last = millis();
                     onTick();
                 }
                 return yieldContinue();
-            };
-            _future = core::shared_ptr<IFuture>(new Future<void, decltype(timerDelegate)>(timerDelegate));
+            }).share();
+            dispatcher.run(_future);
         }
 
         ~DispatcherTimer() {
