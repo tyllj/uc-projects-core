@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <math.h>
 
+#ifdef DEG_TO_RAD
+#define DEG_TO_RAD  0.017453292519943295769236907684886
+#endif
+
 #ifdef abs
 #undef abs
 #endif
