@@ -9,244 +9,287 @@
 #include "etl/delegate.h"
 #include "core/shared_ptr.h"
 #include "core/Tick.h"
+#include "core/Math.h"
 
 namespace core { namespace coop {
     class IFuture {
     public:
-        virtual bool runSlice() = 0;
-        virtual void wait() = 0;
-        virtual bool isCompleted() = 0;
-        virtual void cancel() = 0;
+        virtual auto runSlice() -> bool = 0;
+        virtual auto wait() -> void = 0;
+        virtual auto isCompleted() const -> bool = 0;
+        virtual auto cancel() -> void = 0;
+        virtual auto suspendedFor() const -> uint64_t = 0;
         virtual ~IFuture() = default;
     };
 
     class IDispatcher {
     public:
-        virtual void run(core::shared_ptr<IFuture> future) = 0;
-        template<typename TFuture>
-        void run(TFuture future) {
-            this->run(core::shared_ptr<IFuture>(reinterpret_cast<IFuture*>(new auto {future})));
-        }
+        virtual auto run(core::shared_ptr<IFuture> future) -> void = 0;
     };
 
     template<typename TResult>
     struct FutureResult {
-        FutureResult(etl::optional<TResult> value, bool isCompleted) : value(value), isCompleted(isCompleted) {}
-
+        FutureResult(etl::optional<TResult> value, bool isCompleted) : delay(0), value(value), isCompleted(isCompleted) {}
+        FutureResult(uint64_t delay) : value(etl::nullopt), delay(delay), isCompleted(false) {}
         etl::optional<TResult> value;
+        uint64_t delay;
         bool isCompleted;
         typedef TResult resultType;
     };
 
     template<>
     struct FutureResult<void> {
-        FutureResult(bool isCompleted) : isCompleted(isCompleted) {}
+        FutureResult(bool isCompleted) : delay(0), isCompleted(isCompleted) {}
+        FutureResult(uint64_t delay) : delay(delay), isCompleted(false) {}
+        uint64_t delay;
         bool isCompleted;
         typedef void resultType;
     };
 
     template<typename TResult>
-    FutureResult<TResult> yieldReturn(TResult value) {
+    auto yieldReturn(TResult value) -> FutureResult<TResult>{
         return FutureResult<TResult>(value, true);
     }
 
-    FutureResult<void> yieldReturn() {
+    auto yieldReturn() ->  FutureResult<void> {
         return FutureResult<void>(true);
     }
 
     template<typename TResult>
-    FutureResult<TResult> yieldContinue() {
+    auto yieldContinue() -> FutureResult<TResult> {
         return FutureResult<TResult>(etl::nullopt, false);
     }
 
-    FutureResult<void> yieldContinue() {
+    auto yieldContinue() -> FutureResult<void> {
         return FutureResult<void>(false);
+    }
+
+    template<typename TResult>
+    auto yieldDelay(uint64_t millis) -> FutureResult<TResult> {
+        return FutureResult<TResult>(millis);
+    }
+
+    auto yieldDelay(uint64_t millis) ->  FutureResult<void> {
+        return FutureResult<void>(millis);
     }
 
     template<typename TResult, typename TSliceFunctor>
     class Future;
 
-    template<typename TResult, typename TParentSliceFunctor, typename TContinuationFunctor>
-    class FutureWithContinuation : public IFuture {
+    class FutureBase : public IFuture {
     public:
-        FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation), _isCompleted(false) {
+        FutureBase() : _isCompleted(false), _suspendedUntil(0) {}
+        FutureBase(bool isCompleted) : _isCompleted(isCompleted), _suspendedUntil(0) {}
+
+        auto cancel() -> void final {
+            _isCompleted = true;
+        }
+
+        auto isCompleted() const -> bool final {
+            return _isCompleted;
+        }
+
+        auto wait() -> void final {
+            do {
+                if (auto delay = suspendedFor())
+                    core::sleepms(delay);
+            } while (!runSlice());
+        }
+
+    protected:
+        auto delay(uint64_t millis) -> void {
+            _suspendedUntil = core::millis() + millis;
+        }
+
+        auto suspendedUntil() const -> uint64_t {
+            return _suspendedUntil;
+        }
+
+        auto suspendedForImpl() const -> uint64_t {
+            auto timeRemaining = static_cast<int64_t>(suspendedUntil() - core::millis());
+            return max(timeRemaining, 0);
+        }
+
+    private:
+        bool _isCompleted;
+        uint64_t _suspendedUntil;
+    };
+
+    template<typename TResult, typename TParentSliceFunctor, typename TContinuationFunctor>
+    class FutureWithContinuation : public FutureBase {
+    public:
+        FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation) {
 
         }
 
-        bool runSlice() final {
-            if (_isCompleted)
+        auto runSlice() -> bool final {
+            if (isCompleted())
                 return true;
 
             if (_future.runSlice()) {
                 _continuation(_future.get());
-                _isCompleted = true;
+                cancel();
                 return true;
             }
             return false;
         }
 
-        void wait() final {
-            while (!runSlice());
-        }
-
-        bool isCompleted() final {
-            return _isCompleted;
-        }
-
-        void cancel() final {
-            _isCompleted = true;
-        }
-
-        shared_ptr<FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor>> share() {
+        auto share() const -> shared_ptr<FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor>> {
             return shared_ptr<FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor>>(new FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor> { *this });
+        }
+
+       auto runOn(IDispatcher& d) -> decltype(share()) {
+            auto shared = share();
+            d.run(shared);
+            return shared;
+        }
+
+        auto suspendedFor() const -> uint64_t final {
+            return _future.suspendedFor();
         }
 
     private:
         Future<TResult, TParentSliceFunctor> _future;
         TContinuationFunctor _continuation;
-        bool _isCompleted;
     };
 
     template<typename TParentSliceFunctor, typename TContinuationFunctor>
-    class FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor> : public IFuture {
+    class FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor> : public FutureBase {
     public:
-        FutureWithContinuation(Future<void, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation), _isCompleted(false) {
+        FutureWithContinuation(Future<void, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation) {
 
         }
 
-        bool runSlice() final {
-            if (_isCompleted)
+        auto runSlice() -> bool final {
+            if (isCompleted())
                 return true;
 
             if (_future.runSlice()) {
                 _continuation();
-                _isCompleted = true;
+                cancel();
                 return true;
             }
             return false;
         }
 
-        void wait() final {
-            while (!runSlice());
+        auto suspendedFor() const -> uint64_t final {
+            return _future.suspendedFor();
         }
 
-        bool isCompleted() final {
-            return _isCompleted;
+        auto share() const -> shared_ptr<FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>> {
+            return shared_ptr<FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>>(new FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>(*this));
         }
 
-        void cancel() final {
-            _isCompleted = true;
-        }
-
-        shared_ptr<FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>> share() {
-            return shared_ptr<FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor>>(new FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor> { *this });
+        auto runOn(IDispatcher& d) -> decltype(share()) {
+            auto shared = share();
+            d.run(shared);
+            return shared;
         }
 
     private:
         Future<void, TParentSliceFunctor> _future;
         TContinuationFunctor _continuation;
-        bool _isCompleted;
+
     };
 
     template<typename TResult, typename TSliceFunctor>
-    class Future : public IFuture {
+    class Future : public FutureBase {
     public:
         // TSliceFunctor: FutureResult<TResult>(loopBody)(void)
         Future(TSliceFunctor loopBody) : _functor(loopBody) {}
-        Future(TResult result) : _functor([](){}), _isCompleted(true), _result(result) {}
+        Future(TResult result) : FutureBase(true), _functor([](){}), _result(result) {}
 
-        ~Future() {}
-
-        bool runSlice() final {
-            if (_isCompleted)
+        auto runSlice() -> bool final {
+            if (isCompleted())
                 return true;
 
-            FutureResult<TResult> f = _functor();
-            _isCompleted = f.isCompleted;
-            _result = f.value;
-            return _isCompleted;
+            auto f = static_cast<FutureResult<TResult>>(_functor());
+            if(f.isCompleted) {
+                cancel();
+                _result = f.value;
+            } else if (f.delay) {
+                delay(f.delay);
+            }
+
+            return f.isCompleted;
         }
 
-        void wait() final {
-            while (!runSlice());
-        }
-
-        bool isCompleted() final {
-            return _isCompleted;
-        }
-
-        void cancel() final {
-            _isCompleted = true;
-        }
-
-        TResult get() {
-            if (!_isCompleted)
+        auto get() -> TResult{
+            if (!isCompleted())
                 wait();
 
             return _result.value();
         }
 
-        shared_ptr<Future<TResult, TSliceFunctor>> share() {
-            return shared_ptr<Future<TResult, TSliceFunctor>>(new Future<TResult, TSliceFunctor> { *this });
+        auto suspendedFor() const -> uint64_t final {
+            return suspendedForImpl();
+        }
+
+        auto share() -> shared_ptr<Future<TResult, TSliceFunctor>> {
+            return shared_ptr<Future<TResult, TSliceFunctor>>(new Future<TResult, TSliceFunctor>(*this));
+        }
+
+        auto runOn(IDispatcher& d) -> decltype(share()) {
+            auto shared = share();
+            d.run(shared);
+            return shared;
         }
 
         template<typename TContinuationFunctor>
-        FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor> continueWith(TContinuationFunctor continuation) {
+        auto continueWith(TContinuationFunctor continuation) -> FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor> {
             return FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor>(*this, continuation);
         }
 
     private:
         TSliceFunctor _functor;
-        bool _isCompleted = false;
         etl::optional<TResult> _result = etl::nullopt;
     };
 
     template<typename TSliceFunctor>
-    class Future<void, TSliceFunctor> : public IFuture {
+    class Future<void, TSliceFunctor> : public FutureBase {
     public:
         // TSliceFunctor: FutureResult<TResult>(loopBody)(void)
         Future(TSliceFunctor loopBody) : _functor(loopBody) {}
 
-        ~Future() {}
-
-        bool runSlice() final {
-            if (_isCompleted)
+        auto runSlice() -> bool final {
+            if (isCompleted())
                 return true;
 
-            FutureResult<void> f = _functor();
-            _isCompleted = f.isCompleted;
-            return _isCompleted;
+            auto f = static_cast<FutureResult<void>>(_functor());
+            if (f.isCompleted)
+                cancel();
+            else if (f.delay)
+                delay(f.delay);
+
+            return f.isCompleted;
         }
 
-        void wait() final {
-            while (!runSlice());
-        }
-
-        bool isCompleted() final {
-            return _isCompleted;
-        }
-
-        void cancel() final {
-            _isCompleted = true;
-        }
-
-        void get() {
-            if (!_isCompleted)
+        auto get() -> void {
+            if (!isCompleted())
                 wait();
         }
 
-        shared_ptr<Future<void, TSliceFunctor>> share() {
-            return shared_ptr<Future<void, TSliceFunctor>>(new Future<void, TSliceFunctor> { *this});
+        auto suspendedFor() const -> uint64_t final {
+            return suspendedForImpl();
+        }
+
+        auto share() -> shared_ptr<Future<void, TSliceFunctor>> {
+            return shared_ptr<Future<void, TSliceFunctor>>(new Future<void, TSliceFunctor> (*this));
+        }
+
+        auto runOn(IDispatcher& d) -> decltype(share()) {
+            auto shared = share();
+            d.run(shared);
+            return shared;
         }
 
         template<typename TContinuationFunctor>
-        FutureWithContinuation<void, TSliceFunctor, TContinuationFunctor> continueWith(TContinuationFunctor continuation) {
+        auto continueWith(TContinuationFunctor continuation) -> FutureWithContinuation<void, TSliceFunctor, TContinuationFunctor> {
             return FutureWithContinuation<void, TSliceFunctor, TContinuationFunctor>(*this, continuation);
         }
 
     private:
         TSliceFunctor _functor;
-        bool _isCompleted = false;
     };
 
     template<typename TSliceFunc>
@@ -256,10 +299,12 @@ namespace core { namespace coop {
     }
 
     auto delayms(uint64_t millis) {
-        return async( [start = core::millis(), delay = millis]()  {
-            if (core::millisPassedSince(start) >= delay)
-                return yieldReturn();
-            return yieldContinue();
+        return async( [=] () mutable -> FutureResult<void> {
+            if (millis) {
+                millis = 0;
+                return yieldDelay(millis);
+            }
+            return yieldReturn();
         });
     }
 }}

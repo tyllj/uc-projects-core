@@ -11,18 +11,14 @@
 #include "core/shared_ptr.h"
 
 namespace core { namespace coop {
-    template<typename TFunctor>
     class DispatcherTimer {
     public:
+        template<typename TFunctor>
         DispatcherTimer(IDispatcher& dispatcher, uint64_t interval, TFunctor onTick) {
             _future = core::coop::async([&last = _last, interval, onTick](){
-                if (millisPassedSince(last) >= interval) {
-                    last = millis();
-                    onTick();
-                }
-                return yieldContinue();
-            }).share();
-            dispatcher.run(_future);
+                onTick();
+                return yieldDelay(interval);
+            }).runOn(dispatcher);
         }
 
         ~DispatcherTimer() {
