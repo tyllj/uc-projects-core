@@ -30,7 +30,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
     core::CString findPortNameByUsbProductId(const char* vid, const char* pid) {
         char devicePath[32] = { 0 };
         findUsbSerialPortByProductId(devicePath, vid, pid);
-        return core::cstrings::toSharedCString(devicePath);
+        return { devicePath };
     }
 
     core::CString findPortNameByUsbProductId(const char* pidColonVid) {
