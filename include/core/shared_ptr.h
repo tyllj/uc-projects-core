@@ -173,10 +173,6 @@ namespace core {
             return *this;
         }
 
-        operator T*() {
-            return _ptr;
-        }
-
         void swap(shared_ptr<T[]>& other) {
             _CORE_ATOMIC_IMPL* oldRefCount = _refCount;
             T* oldPtr = _ptr;

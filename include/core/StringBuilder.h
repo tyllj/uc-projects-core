@@ -50,7 +50,7 @@ namespace core {
             if (_position >= _length)
                 return *this;
 
-            *ptr() = c;
+            *end() = c;
             seek(1);
             _buffer[_position] = '\0';
             return *this;
@@ -68,7 +68,7 @@ namespace core {
                 return *this;
 
             core::dtostrf(value, minWidth, decimalPlaces, &_buffer[_position]);
-            seek(cstrings::length(ptr()));
+            seek(cstrings::length(end()));
             return *this;
         }
 
@@ -90,7 +90,7 @@ namespace core {
             if (intWidth > width)
                 return *this;
             pad(width - intWidth, padding);
-            core::ltoa(value, ptr(), 10);
+            core::ltoa(value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -99,7 +99,7 @@ namespace core {
             if (_position + intWidth >= _length)
                 return *this;
 
-            core::ltoa(value, ptr(), 10);
+            core::ltoa(value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -108,9 +108,9 @@ namespace core {
             if (_position + width >= _length)
                 return *this;
 
-            core::ltoa(value, ptr(), 16);
-            rightAlign(ptr(), width);
-            seek(strlen(ptr()));
+            core::ltoa(value, end(), 16);
+            rightAlign(end(), width);
+            seek(strlen(end()));
             return *this;
         }
 
@@ -121,7 +121,7 @@ namespace core {
             if (intWidth > width)
                 return *this;
             pad(width - intWidth, padding);
-            core::itoa(value, ptr(), 10);
+            core::itoa(value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -130,8 +130,8 @@ namespace core {
             if (_position + intWidth >= _length)
                 return *this;
 
-            core::itoa(value, ptr(), 10);
-            seek(strlen(ptr()));
+            core::itoa(value, end(), 10);
+            seek(strlen(end()));
             return *this;
         }
         StringBuilder& appendHex(int16_t value) {
@@ -139,9 +139,9 @@ namespace core {
             if (_position + width >= _length)
                 return *this;
 
-            core::ltoa(value, ptr(), 16);
-            rightAlign(ptr(), width);
-            seek(strlen(ptr()));
+            core::ltoa(value, end(), 16);
+            rightAlign(end(), width);
+            seek(strlen(end()));
             return *this;
         }
 
@@ -152,7 +152,7 @@ namespace core {
             if (intWidth > width)
                 return *this;
             pad(width - intWidth, padding);
-            core::itoa((int16_t)value, ptr(), 10);
+            core::itoa((int16_t)value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -161,8 +161,8 @@ namespace core {
             if (_position + intWidth >= _length)
                 return *this;
 
-            core::itoa((int16_t)value, ptr(), 10);
-            seek(strlen(ptr()));
+            core::itoa((int16_t)value, end(), 10);
+            seek(strlen(end()));
             return *this;
         }
         StringBuilder& appendHex(int8_t value) {
@@ -170,9 +170,9 @@ namespace core {
             if (_position + width >= _length)
                 return *this;
 
-            core::itoa(value, ptr(), 16);
-            rightAlign(ptr(), width);
-            seek(strlen(ptr()));
+            core::itoa(value, end(), 16);
+            rightAlign(end(), width);
+            seek(strlen(end()));
             return *this;
         }
 
@@ -183,7 +183,7 @@ namespace core {
             if (intWidth > width)
                 return *this;
             pad(width - intWidth, padding);
-            core::ultoa(value, ptr(), 10);
+            core::ultoa(value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -192,8 +192,8 @@ namespace core {
             if (_position + intWidth >= _length)
                 return *this;
 
-            core::ultoa(value, ptr(), 10);
-            seek(strlen(ptr()));
+            core::ultoa(value, end(), 10);
+            seek(strlen(end()));
             return *this;
         }
         StringBuilder& appendHex(uint32_t value) {
@@ -201,9 +201,9 @@ namespace core {
             if (_position + width >= _length)
                 return *this;
 
-            core::ultoa(value, ptr(), 16);
-            rightAlign(ptr(), width);
-            seek(strlen(ptr()));
+            core::ultoa(value, end(), 16);
+            rightAlign(end(), width);
+            seek(strlen(end()));
             return *this;
         }
 
@@ -214,7 +214,7 @@ namespace core {
             if (intWidth > width)
                 return *this;
             pad(width - intWidth, padding);
-            core::ultoa((int16_t)value, ptr(), 10);
+            core::ultoa((int16_t)value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -223,8 +223,8 @@ namespace core {
             if (_position + intWidth >= _length)
                 return *this;
 
-            core::ultoa(value, ptr(), 10);
-            seek(strlen(ptr()));
+            core::ultoa(value, end(), 10);
+            seek(strlen(end()));
             return *this;
         }
         StringBuilder& appendHex(uint16_t value) {
@@ -232,9 +232,9 @@ namespace core {
             if (_position + width >= _length)
                 return *this;
 
-            core::ultoa(value, ptr(), 16);
-            rightAlign(ptr(), width);
-            seek(strlen(ptr()));
+            core::ultoa(value, end(), 16);
+            rightAlign(end(), width);
+            seek(strlen(end()));
             return *this;
         }
 
@@ -245,7 +245,7 @@ namespace core {
             if (intWidth > width)
                 return *this;
             pad(width - intWidth, padding);
-            core::itoa((uint16_t)value, ptr(), 10);
+            core::itoa((uint16_t)value, end(), 10);
             seek(intWidth);
             return *this;
         }
@@ -254,17 +254,18 @@ namespace core {
             if (_position + intWidth >= _length)
                 return *this;
 
-            core::ultoa((uint16_t)value, ptr(), 10);
-            seek(strlen(ptr()));
+            core::ultoa((uint16_t)value, end(), 10);
+            seek(strlen(end()));
+            return *this;
         }
         StringBuilder& appendHex(uint8_t value) {
             size_t width = 2;
             if (_position + width >= _length)
                 return *this;
 
-            core::ultoa((uint16_t)value, ptr(), 16);
-            rightAlign(ptr(), width);
-            seek(strlen(ptr()));
+            core::ultoa((uint16_t)value, end(), 16);
+            rightAlign(end(), width);
+            seek(strlen(end()));
             return *this;
         }
 
@@ -352,12 +353,12 @@ namespace core {
             }
         }
 
-        void lineBreak() {
-            append(::core::cstrings::newLine(cstrings::LF));
+        StringBuilder& lineBreak() {
+            return append(::core::cstrings::newLine(cstrings::LF));
         }
 
-        void lineBreak(::core::cstrings::NewLineMode mode) {
-            append(::core::cstrings::newLine(mode));
+        StringBuilder& lineBreak(::core::cstrings::NewLineMode mode) {
+            return append(::core::cstrings::newLine(mode));
         }
 
         template<typename T>
@@ -386,19 +387,24 @@ namespace core {
         }
 
         core::CString toString() {
-            return core::cstrings::toSharedCString(_buffer);
+            return { _buffer };
         }
+
         operator const char*() const { return _buffer; }
 
+        inline char* begin() const { return &_buffer[_position]; }
+
+        inline char* end() const { return &_buffer[_position]; }
+
     private:
-        inline char* ptr() const { return &_buffer[_position]; }
+
 
         inline void seek(size_t width) {
             _position += width;
         }
 
         inline void pad(size_t width, char padding) {
-            memset(ptr(), padding, width);
+            memset(end(), padding, width);
             seek(width);
         }
 
