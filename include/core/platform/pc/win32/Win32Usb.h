@@ -16,7 +16,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
         HDEVINFO DeviceInfoSet = {};
         DWORD DeviceIndex =0;
         SP_DEVINFO_DATA DeviceInfoData = {};
-        const char* DevEnum = "USB";
+        constexpr char DevEnum[] = "USB";
         char ExpectedDeviceId[80] = {0}; //Store hardware id
         BYTE szBuffer[1024] = {0};
         DEVPROPTYPE ulPropertyType = {};
@@ -55,7 +55,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
                 hDeviceRegistryKey = SetupDiOpenDevRegKey(DeviceInfoSet, &DeviceInfoData,DICS_FLAG_GLOBAL, 0,DIREG_DEV, KEY_READ);
                 if (hDeviceRegistryKey == INVALID_HANDLE_VALUE) {
                     //DWORD Error = GetLastError();
-                    throw std::runtime_error("Could not open registry");
+                    throw std::runtime_error("Could not open device registry.");
                 } else {
                     // Read in the name of the port
                     char pszPortName[32];
