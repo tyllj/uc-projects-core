@@ -19,7 +19,49 @@
 #define SUBSTRING_NOT_FOUND -1
 
 namespace core {
-    typedef core::shared_ptr<char[]> CString;
+    class CString : public core::shared_ptr<char[]> {
+    public:
+        constexpr CString() : core::shared_ptr<char[]>() {}
+        CString(const CString& other) : core::shared_ptr<char[]>(other) {}
+        CString(CString&& other) : core::shared_ptr<char[]>(other) {}
+        CString(const core::shared_ptr<char[]>& other) : core::shared_ptr<char[]>(other) {}
+        CString(core::shared_ptr<char[]>&& other) : core::shared_ptr<char[]>(other) {}
+        explicit CString(size_t size) : core::shared_ptr<char[]>(size) {}
+        CString(const char * str) : core::shared_ptr<char[]>(strlen(str) + 1) {
+            strcpy(get(), str);
+        }
+        CString(char * str) : core::shared_ptr<char[]>(strlen(str) + 1) {
+            strcpy(get(), str);
+        }
+
+        template<typename TNativeStringType>
+        CString(const TNativeStringType& str) : core::shared_ptr<char[]>(str.TNativeStringType::length() + 1) {
+            strcpy(get(), str.TNativeStringType::c_str());
+        }
+
+        CString& operator=(const CString& other) {
+            core::shared_ptr<char[]>::operator=(other);
+            return *this;
+        }
+
+        operator char*() const { return get(); }
+        operator const char*() const { return get(); }
+    };
+
+    template<typename TTo>
+    inline TTo cstring_cast(const CString& str) {
+        return TTo(str.get());
+    }
+
+    template<>
+    inline CString cstring_cast<CString>(const CString& str) {
+        return str;
+    }
+
+    template<>
+    inline const char* cstring_cast<const char*>(const CString& str) {
+        return str.get();
+    }
 }
 
 namespace core { namespace cstrings {
@@ -182,13 +224,6 @@ namespace core { namespace cstrings {
 
     inline void subString(char* inplace, size_t startIndex, size_t length) {
         subString(inplace, inplace, startIndex, length);
-    }
-
-    inline core::CString toSharedCString(const char* str) {
-        size_t size = length(str) + 1;
-        CString result = CString(size);
-        memcpy(result.get(), str, size);
-        return result;
     }
 
     inline void empty(char* str) {
