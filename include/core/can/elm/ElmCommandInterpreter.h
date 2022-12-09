@@ -6,14 +6,18 @@
 #define UC_CORE_ELMCOMMANDINTERPRETER_H
 
 #include "ElmRuntimeConfiguration.h"
-#include "core/cli/LineEditor.h"
-#include "core/io/Stream.h"
-#include "core/io/StreamWriter.h"
+#include "core/StringBuilder.h"
+#include "core/Tick.h"
 #include "core/Convert.h"
 #include "core/shared_ptr.h"
 #include "core/coop/Future.h"
-#include "core/StringBuilder.h"
-#include "core/Tick.h"
+#include "core/cli/AnsiCharacters.h"
+#include "core/io/Stream.h"
+#include "core/io/StreamReader.h"
+#include "core/io/StreamWriter.h"
+#include "core/can/IsoTpSocket.h"
+
+
 
 namespace core { namespace can { namespace elm {
     class ElmCommandInterpreter {
@@ -44,12 +48,10 @@ namespace core { namespace can { namespace elm {
     private:
         void startBackgroundWorker(coop::IDispatcher &dispatcher) {
             beginAcceptInput();
-            auto backgroundWorkerDelegate = [self = this]() {
-                self->process();
+            _backgroundWorkerTask = core::coop::async([this]() {
+                this->process();
                 return core::coop::yieldContinue();
-            };
-            _backgroundWorkerTask = core::shared_ptr<core::coop::IFuture>(new core::coop::Future<void, decltype(backgroundWorkerDelegate)>(backgroundWorkerDelegate));
-            dispatcher.run(_backgroundWorkerTask);
+            }).runOn(dispatcher);
         }
 
         void process() {
@@ -307,7 +309,7 @@ namespace core { namespace can { namespace elm {
         void tryProtocol(const char* param) {
 
             if (cstrings::length(param) != 1 ||
-                    !cstrings::all(param, [](char c) { return cstrings::contains("0123456789ABC", c); })) {
+                    !convert::isHexString(param)) {
                 respondUnkown();
                 return;
             }
@@ -369,7 +371,7 @@ namespace core { namespace can { namespace elm {
             cstrings::removeWhitespaces(_command, input);
             cstrings::toUpper(_command);
 
-            if (cstrings::all(_command, [](char c) { return cstrings::contains("0123456789ABCDEF", c); })) {
+            if (convert::isHexString(_command)) {
                 sendToVehicle(_command);
             }
             else if (isCommand(_command, "ATRV", &param))

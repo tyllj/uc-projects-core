@@ -25,11 +25,12 @@ namespace core { namespace coop {
     class IDispatcher {
     public:
         virtual auto run(core::shared_ptr<IFuture> future) -> void = 0;
+        virtual auto await(core::shared_ptr<IFuture> future) -> void = 0;
     };
 
     template<typename TResult>
     struct FutureResult {
-        FutureResult(etl::optional<TResult> value, bool isCompleted) : delay(0), value(value), isCompleted(isCompleted) {}
+        FutureResult(etl::optional<TResult> value, bool isCompleted) : value(value), delay(0), isCompleted(isCompleted) {}
         FutureResult(uint64_t delay) : value(etl::nullopt), delay(delay), isCompleted(false) {}
         etl::optional<TResult> value;
         uint64_t delay;
@@ -144,6 +145,12 @@ namespace core { namespace coop {
             return shared;
         }
 
+        auto awaitOn(IDispatcher& d) -> TResult {
+            auto shared = share();
+            d.await(shared);
+            return shared.get();
+        }
+
         auto suspendedFor() const -> uint64_t final {
             return _future.suspendedFor();
         }
@@ -184,6 +191,11 @@ namespace core { namespace coop {
             auto shared = share();
             d.run(shared);
             return shared;
+        }
+
+        auto awaitOn(IDispatcher& d) -> void {
+            auto shared = share();
+            d.await(shared);
         }
 
     private:
@@ -235,6 +247,12 @@ namespace core { namespace coop {
             return shared;
         }
 
+        auto awaitOn(IDispatcher& d) -> TResult {
+            auto shared = share();
+            d.await(shared);
+            return shared->get();
+        }
+
         template<typename TContinuationFunctor>
         auto continueWith(TContinuationFunctor continuation) -> FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor> {
             return FutureWithContinuation<TResult, TSliceFunctor, TContinuationFunctor>(*this, continuation);
@@ -281,6 +299,11 @@ namespace core { namespace coop {
             auto shared = share();
             d.run(shared);
             return shared;
+        }
+
+        auto awaitOn(IDispatcher& d) -> void {
+            auto shared = share();
+            d.await(shared);
         }
 
         template<typename TContinuationFunctor>

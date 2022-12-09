@@ -34,6 +34,11 @@ namespace core { namespace coop {
                 _tasks.insert(_current, future);
         }
 
+        auto await(core::shared_ptr<IFuture> future) -> void {
+            run(future);
+            while (!future->isCompleted())
+                dispatchOne();
+        }
     private:
         typedef typename etl::list<core::shared_ptr<IFuture>, MAX_TASKS>::iterator TaskIterator;
 

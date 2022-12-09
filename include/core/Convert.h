@@ -60,6 +60,10 @@ namespace core { namespace convert {
         toHexString(data, n, destination, destinationSize);
     }
 
+    inline bool isHexString(const char* str) {
+        return core::cstrings::all(str, [](char c) { return core::cstrings::contains("0123456789ABCDEFabcdef", c);});
+    }
+
     inline size_t fromHexString(const char *hexString, uint8_t* bytes, size_t n) {
         size_t i = 0;
         char currentByteString[3] = { 0x00 };

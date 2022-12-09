@@ -27,6 +27,7 @@ namespace core {
         CString(const core::shared_ptr<char[]>& other) : core::shared_ptr<char[]>(other) {}
         CString(core::shared_ptr<char[]>&& other) : core::shared_ptr<char[]>(other) {}
         explicit CString(size_t size) : core::shared_ptr<char[]>(size) {}
+        explicit CString(int32_t size) : core::shared_ptr<char[]>(static_cast<size_t>(size)) {}
         CString(const char * str) : core::shared_ptr<char[]>(strlen(str) + 1) {
             strcpy(get(), str);
         }

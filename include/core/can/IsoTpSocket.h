@@ -33,6 +33,10 @@ namespace core { namespace can {
             return _data.get();
         }
 
+        inline uint8_t at(size_t i) {
+            return _data[i];
+        }
+
     private:
         canid_t _canid;
         size_t _length;
@@ -194,9 +198,7 @@ extern "C" {
         _backgroundWorkerTask = core::coop::async([self = this](){
             self->receiveAndTransmit();
             return coop::yieldContinue();
-        }).share();
-
-        dispatcher.run(_backgroundWorkerTask);
+        }).runOn(dispatcher);
     }
 }}
 

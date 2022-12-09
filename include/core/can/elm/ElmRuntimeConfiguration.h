@@ -39,8 +39,6 @@ namespace core { namespace can {namespace elm {
         bool isSpacesOn = true;
         bool isLineFeedsOn = true;
         bool isAutoFormattingOn = true;
-
-
     };
 }}}
 #endif //UC_CORE_ELMRUNTIMECONFIGURATION_H
