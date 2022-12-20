@@ -7,8 +7,10 @@
 
 #include <windows.h>
 #include <stdexcept>
+#include "core/Error.h"
 #include "ftdiimports/ftd2xx.h"
 #include "ftdiimports/LibFT4222.h"
+#include "Types.h"
 
 // type declarations for the function pointer into ftd2xx.dll
 typedef FT_STATUS (__stdcall FT_CreateDeviceInfoList)(LPDWORD lpdwNumDevs);
@@ -68,56 +70,20 @@ namespace core { namespace platform { namespace pc {
 
     class Win32Ft4222 {
     public:
-        Win32Ft4222() {
-            _ftd2xxHandle = LoadLibraryA("ftd2xx.dll");
-            if (_ftd2xxHandle == nullptr)
-                throw std::runtime_error("Failed to load ftd2xx.dll.");
-            _libFt4222Handle = LoadLibraryA("LibFT4222.dll");
-            if (_libFt4222Handle == nullptr)
-                throw std::runtime_error("Failed to load LibFT4222.dll.");
+        struct Error {
+            static constexpr core::Error CouldNotOpenDevice = core::Error(0xF7D1FA11, "Could not open FT4222 device.");
+            static constexpr core::Error CouldNotSetDeviceClock = core::Error(0xF7D1FA11, "Could not set FT4222 device clock rate.");
+            static constexpr core::Error CouldNotInitializeFunction = core::Error(0xF7D1FA11, "Could not initialize FT4222 device function.");
+        };
 
-            // Load all needed API functions
-            ftd2xx_createDeviceInfoList = reinterpret_cast<::FT_CreateDeviceInfoList *> (GetProcAddress(_ftd2xxHandle, "FT_CreateDeviceInfoList"));
-            ftd2xx_getDeviceInfoList = reinterpret_cast<::FT_GetDeviceInfoList *> (GetProcAddress(_ftd2xxHandle, "FT_GetDeviceInfoList"));
-            ftd2xx_getDeviceInfoDetail = reinterpret_cast<::FT_GetDeviceInfoDetail *> (GetProcAddress(_ftd2xxHandle, "FT_GetDeviceInfoDetail"));
-            ftd2xx_openEx = reinterpret_cast<::FT_OpenEx *> (GetProcAddress(_ftd2xxHandle, "FT_OpenEx"));
-            ftd2xx_close = reinterpret_cast<::FT_Close *> (GetProcAddress(_ftd2xxHandle, "FT_Close"));
-            ftd2xx_setTimeouts = reinterpret_cast<::FT_SetTimeouts *> (GetProcAddress(_ftd2xxHandle, "FT_SetTimeouts"));
-            ftd2xx_read = reinterpret_cast<::FT_Read *> (GetProcAddress(_ftd2xxHandle, "FT_Read"));
-            ftd2xx_write = reinterpret_cast<::FT_Write *> (GetProcAddress(_ftd2xxHandle, "FT_Write"));
-            ftd2xx_getQueueStatus = reinterpret_cast<::FT_GetQueueStatus *> (GetProcAddress(_ftd2xxHandle, "FT_GetQueueStatus"));
-            ftd2xx_getStatus = reinterpret_cast<::FT_GetStatus *> (GetProcAddress(_ftd2xxHandle, "FT_GetStatus"));
-            ftd2xx_getDriverVersion = reinterpret_cast<::FT_GetDriverVersion *> (GetProcAddress(_ftd2xxHandle, "FT_GetDriverVersion"));
-            ftd2xx_getLibraryVersion = reinterpret_cast<::FT_GetLibraryVersion *> (GetProcAddress(_ftd2xxHandle, "FT_GetLibraryVersion"));
-
-            ft4222_unInitialize = reinterpret_cast<::FT_4222_UnInitialize *> (GetProcAddress(_libFt4222Handle, "FT4222_UnInitialize"));
-            ft4222_setClock = reinterpret_cast<::FT_4222_SetClock *> (GetProcAddress(_libFt4222Handle, "FT4222_SetClock"));
-            ft4222_getClock = reinterpret_cast<::FT_4222_GetClock *> (GetProcAddress(_libFt4222Handle, "FT4222_GetClock"));
-            ft4222_getVersion = reinterpret_cast<::FT_4222_GetVersion *> (GetProcAddress(_libFt4222Handle, "FT4222_GetVersion"));
-            ft4222_GetMaxTransferSize = reinterpret_cast<::FT_4222_GetMaxTransferSize *> (GetProcAddress(_libFt4222Handle, "FT4222_GetMaxTransferSize"));
-            ft4222_GPIO_Init = reinterpret_cast<::FT_4222_GPIO_Init *> (GetProcAddress(_libFt4222Handle, "FT4222_GPIO_Init"));
-            ft4222_GPIO_Read = reinterpret_cast<::FT_4222_GPIO_Read *> (GetProcAddress(_libFt4222Handle, "FT4222_GPIO_Read"));
-            ft4222_GPIO_Write = reinterpret_cast<::FT_4222_GPIO_Write *> (GetProcAddress(_libFt4222Handle, "FT4222_GPIO_Write"));
-            ft4222_SPIMaster_Init = reinterpret_cast<::FT_4222_SPIMaster_Init *> (GetProcAddress(_libFt4222Handle, "FT4222_SPIMaster_Init"));
-            ft4222_SPIMaster_SingleRead = reinterpret_cast<::FT_4222_SPIMaster_SingleRead *> (GetProcAddress(_libFt4222Handle, "FT4222_SPIMaster_SingleRead"));
-            ft4222_SPIMaster_SingleWrite = reinterpret_cast<::FT_4222_SPIMaster_SingleWrite *> (GetProcAddress(_libFt4222Handle, "FT4222_SPIMaster_SingleWrite"));
-            ft4222_SPIMaster_SingleReadWrite = reinterpret_cast<::FT_4222_SPIMaster_SingleReadWrite *> (GetProcAddress(_libFt4222Handle, "FT4222_SPIMaster_SingleReadWrite"));
-            ft4222_SPISlave_Init = reinterpret_cast<::FT_4222_SPISlave_Init *> (GetProcAddress(_libFt4222Handle, "FT4222_SPISlave_Init"));
-            ft4222_SPISlave_InitEx = reinterpret_cast<::FT_4222_SPISlave_InitEx *> (GetProcAddress(_libFt4222Handle, "FT4222_SPISlave_InitEx"));
-            ft4222_SPISlave_GetRxStatus = reinterpret_cast<::FT_4222_SPISlave_GetRxStatus *> (GetProcAddress(_libFt4222Handle, "FT4222_SPISlave_GetRxStatus"));
-            ft4222_SPISlave_Read = reinterpret_cast<::FT_4222_SPISlave_Read *> (GetProcAddress(_libFt4222Handle, "FT4222_SPISlave_Read"));
-            ft4222_SPISlave_Write = reinterpret_cast<::FT_4222_SPISlave_Write *> (GetProcAddress(_libFt4222Handle, "FT4222_SPISlave_Write"));
-            ft4222_UnInitialize = reinterpret_cast<::FT_4222_UnInitialize *> (GetProcAddress(_libFt4222Handle, "FT4222_UnInitialize"));
-            ft4222_SPI_Reset = reinterpret_cast<::FT_4222_SPI_Reset *> (GetProcAddress(_libFt4222Handle, "FT4222_SPI_Reset"));
-            ft4222_SPI_SetDrivingStrength = reinterpret_cast<::FT_4222_SPI_SetDrivingStrength *> (GetProcAddress(_libFt4222Handle, "FT4222_SPI_SetDrivingStrength"));
+        static auto load() -> core::ErrorOr<Win32Ft4222> {
+            auto ftd2xxHandle = TRY(loadLibrary("ftd2xx.dll"));
+            auto libFt4222Handle = TRY(loadLibrary("LibFT4222.dll"));
+            return Win32Ft4222(std::move(ftd2xxHandle), std::move(libFt4222Handle));
         }
 
-        ~Win32Ft4222() {
-            FreeLibrary(_libFt4222Handle);
-            _libFt4222Handle = nullptr;
-            FreeLibrary(_ftd2xxHandle);
-            _ftd2xxHandle = nullptr;
-        }
+        Win32Ft4222(Win32Ft4222&& other) = default;
+
 
         FT_STATUS createDeviceInfoList (LPDWORD lpdwNumDevs) { return ftd2xx_createDeviceInfoList(lpdwNumDevs); }
         FT_STATUS getDeviceInfoList (FT_DEVICE_LIST_INFO_NODE *pDest, LPDWORD lpdwNumDevs) { return ftd2xx_getDeviceInfoList(pDest, lpdwNumDevs); }
@@ -168,8 +134,48 @@ namespace core { namespace platform { namespace pc {
                                                                  SPI_DrivingStrength ssoStrength) { return ft4222_SPI_SetDrivingStrength(ftHandle, clkStrength, ioStrength, ssoStrength); }
 
     private:
-        HMODULE _ftd2xxHandle = nullptr;
-        HMODULE _libFt4222Handle = nullptr;
+        Win32DynamicLibrary _ftd2xxHandle;
+        Win32DynamicLibrary _libFt4222Handle;
+
+        Win32Ft4222(Win32DynamicLibrary&& ftd2xxHandle, Win32DynamicLibrary&& libft4222Handle) : _ftd2xxHandle(std::move(ftd2xxHandle)), _libFt4222Handle(std::move(libft4222Handle)) {
+            loadApiFunctions();
+        }
+
+        auto loadApiFunctions()-> void{
+            ftd2xx_createDeviceInfoList = reinterpret_cast<::FT_CreateDeviceInfoList *> (GetProcAddress(_ftd2xxHandle.get(), "FT_CreateDeviceInfoList"));
+            ftd2xx_getDeviceInfoList = reinterpret_cast<::FT_GetDeviceInfoList *> (GetProcAddress(_ftd2xxHandle.get(), "FT_GetDeviceInfoList"));
+            ftd2xx_getDeviceInfoDetail = reinterpret_cast<::FT_GetDeviceInfoDetail *> (GetProcAddress(_ftd2xxHandle.get(), "FT_GetDeviceInfoDetail"));
+            ftd2xx_openEx = reinterpret_cast<::FT_OpenEx *> (GetProcAddress(_ftd2xxHandle.get(), "FT_OpenEx"));
+            ftd2xx_close = reinterpret_cast<::FT_Close *> (GetProcAddress(_ftd2xxHandle.get(), "FT_Close"));
+            ftd2xx_setTimeouts = reinterpret_cast<::FT_SetTimeouts *> (GetProcAddress(_ftd2xxHandle.get(), "FT_SetTimeouts"));
+            ftd2xx_read = reinterpret_cast<::FT_Read *> (GetProcAddress(_ftd2xxHandle.get(), "FT_Read"));
+            ftd2xx_write = reinterpret_cast<::FT_Write *> (GetProcAddress(_ftd2xxHandle.get(), "FT_Write"));
+            ftd2xx_getQueueStatus = reinterpret_cast<::FT_GetQueueStatus *> (GetProcAddress(_ftd2xxHandle.get(), "FT_GetQueueStatus"));
+            ftd2xx_getStatus = reinterpret_cast<::FT_GetStatus *> (GetProcAddress(_ftd2xxHandle.get(), "FT_GetStatus"));
+            ftd2xx_getDriverVersion = reinterpret_cast<::FT_GetDriverVersion *> (GetProcAddress(_ftd2xxHandle.get(), "FT_GetDriverVersion"));
+            ftd2xx_getLibraryVersion = reinterpret_cast<::FT_GetLibraryVersion *> (GetProcAddress(_ftd2xxHandle.get(), "FT_GetLibraryVersion"));
+
+            ft4222_unInitialize = reinterpret_cast<::FT_4222_UnInitialize *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_UnInitialize"));
+            ft4222_setClock = reinterpret_cast<::FT_4222_SetClock *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SetClock"));
+            ft4222_getClock = reinterpret_cast<::FT_4222_GetClock *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_GetClock"));
+            ft4222_getVersion = reinterpret_cast<::FT_4222_GetVersion *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_GetVersion"));
+            ft4222_GetMaxTransferSize = reinterpret_cast<::FT_4222_GetMaxTransferSize *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_GetMaxTransferSize"));
+            ft4222_GPIO_Init = reinterpret_cast<::FT_4222_GPIO_Init *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_GPIO_Init"));
+            ft4222_GPIO_Read = reinterpret_cast<::FT_4222_GPIO_Read *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_GPIO_Read"));
+            ft4222_GPIO_Write = reinterpret_cast<::FT_4222_GPIO_Write *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_GPIO_Write"));
+            ft4222_SPIMaster_Init = reinterpret_cast<::FT_4222_SPIMaster_Init *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPIMaster_Init"));
+            ft4222_SPIMaster_SingleRead = reinterpret_cast<::FT_4222_SPIMaster_SingleRead *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPIMaster_SingleRead"));
+            ft4222_SPIMaster_SingleWrite = reinterpret_cast<::FT_4222_SPIMaster_SingleWrite *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPIMaster_SingleWrite"));
+            ft4222_SPIMaster_SingleReadWrite = reinterpret_cast<::FT_4222_SPIMaster_SingleReadWrite *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPIMaster_SingleReadWrite"));
+            ft4222_SPISlave_Init = reinterpret_cast<::FT_4222_SPISlave_Init *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPISlave_Init"));
+            ft4222_SPISlave_InitEx = reinterpret_cast<::FT_4222_SPISlave_InitEx *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPISlave_InitEx"));
+            ft4222_SPISlave_GetRxStatus = reinterpret_cast<::FT_4222_SPISlave_GetRxStatus *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPISlave_GetRxStatus"));
+            ft4222_SPISlave_Read = reinterpret_cast<::FT_4222_SPISlave_Read *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPISlave_Read"));
+            ft4222_SPISlave_Write = reinterpret_cast<::FT_4222_SPISlave_Write *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPISlave_Write"));
+            ft4222_UnInitialize = reinterpret_cast<::FT_4222_UnInitialize *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_UnInitialize"));
+            ft4222_SPI_Reset = reinterpret_cast<::FT_4222_SPI_Reset *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPI_Reset"));
+            ft4222_SPI_SetDrivingStrength = reinterpret_cast<::FT_4222_SPI_SetDrivingStrength *> (GetProcAddress(_libFt4222Handle.get(), "FT4222_SPI_SetDrivingStrength"));
+        }
 
         // function pointer into ftd2xx.dll
         ::FT_CreateDeviceInfoList *ftd2xx_createDeviceInfoList;

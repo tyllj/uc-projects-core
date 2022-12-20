@@ -8,7 +8,6 @@
 #include <string.h>
 #include "Stream.h"
 #include "TextWriter.h"
-#include "core/unique_ptr.h"
 #include "core/CStrings.h"
 #include "core/StringBuilder.h"
 #include "FileSystem.h"
@@ -52,7 +51,7 @@ namespace core { namespace io {
 
     private:
         core::io::FileSystem* _fileSystem;
-        core::shared_ptr<char[]> _fullName;
+        core::CString _fullName;
         FileSystemEntryType _type;
 
         friend class DirectoryInfo;
@@ -79,8 +78,8 @@ namespace core { namespace io {
             return getFileSystem().forEach(getFullName(), action);
         }
 
-        etl::optional<DirectoryInfo> createSubDirectory() {
-            return etl::optional<DirectoryInfo>();
+        auto createSubDirectory() -> ErrorOr<DirectoryInfo> {
+            return core::NotImplementedError();
         };
     };
 
@@ -99,7 +98,7 @@ namespace core { namespace io {
             return DirectoryInfo(this->FileSystemInfo::getFileSystem(), getFullName());
         }
 
-        core::shared_ptr<Stream> open(core::io::FileMode mode) {
+        auto open(core::io::FileMode mode) -> core::ErrorOr<etl::unique_ptr<Stream>> {
             return getFileSystem().open(getFullName(), mode);
         };
     };

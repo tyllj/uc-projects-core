@@ -61,25 +61,33 @@ namespace core {
 #define _CORE_ATOMIC_IMPL core::_avr_atomic_int8_t
 #else
 #include "etl/atomic.h"
+#include "etl/memory.h"
 #define _CORE_ATOMIC_IMPL etl::atomic_int8_t
 #endif
 
 namespace core {
-    template <class T>
+    template <typename T>
     class shared_ptr {
-    public:
-        constexpr shared_ptr() : _ptr(nullptr), _refCount(nullptr) {}
-        explicit shared_ptr(T* const ptr ) : _ptr(ptr), _refCount(new _CORE_ATOMIC_IMPL(1)) {}
+    private:
+        static constexpr void (*DefaultDeleter)(T*) = [](T* ptr) { delete ptr; };
+        static constexpr void (*NullDeleter)(T*) = [](T* ptr) {};
 
-        shared_ptr(const shared_ptr& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount) {
+    public:
+        constexpr shared_ptr() : _ptr(nullptr), _refCount(nullptr), _deleter(NullDeleter) {}
+        explicit shared_ptr(T* const ptr, void (*deleter)(T*) = DefaultDeleter) : _ptr(ptr), _refCount(new _CORE_ATOMIC_IMPL(1)), _deleter(deleter) {}
+
+        shared_ptr(const shared_ptr& ptr) : _ptr(ptr._ptr), _refCount(ptr._refCount), _deleter(ptr._deleter) {
             if (_refCount)
                 (*_refCount)++;
         }
 
-        shared_ptr(shared_ptr&& ptr) noexcept : _ptr(ptr._ptr), _refCount(ptr._refCount) {
+        shared_ptr(shared_ptr&& ptr) noexcept : _ptr(ptr._ptr), _refCount(ptr._refCount), _deleter(ptr._deleter) {
             ptr._refCount = nullptr;
             ptr._ptr = nullptr;
+            ptr._deleter = NullDeleter;
         }
+
+        shared_ptr(etl::unique_ptr<T>&& unique) noexcept : _ptr(unique.release()), _refCount(new _CORE_ATOMIC_IMPL(1), _deleter(DefaultDeleter)) {}
 
         template<class U>
         operator shared_ptr<U>() {
@@ -88,7 +96,7 @@ namespace core {
 
         ~shared_ptr() {
             if (_refCount && --(*_refCount) == 0) {
-                delete _ptr;
+                _deleter(_ptr);
                 delete _refCount;
             }
         }
@@ -101,10 +109,13 @@ namespace core {
         void swap(shared_ptr& other) {
             _CORE_ATOMIC_IMPL* oldRefCount = _refCount;
             T* oldPtr = _ptr;
+            void (*oldDeleter)(T*) = _deleter;
             _refCount = other._refCount;
             _ptr = other._ptr;
+            _deleter = other._deleter;
             other._refCount = oldRefCount;
             other._ptr = oldPtr;
+            other._deleter = oldDeleter;
         }
 
         void reset() {
@@ -140,6 +151,7 @@ namespace core {
     private:
         T* _ptr;
         _CORE_ATOMIC_IMPL* _refCount;
+        void (*_deleter)(T*);
     };
 
     template <class T>

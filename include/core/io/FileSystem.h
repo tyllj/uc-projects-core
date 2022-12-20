@@ -34,9 +34,14 @@ namespace core { namespace io {
 
     class FileSystem {
     public:
-        virtual core::shared_ptr<core::io::Stream> open(const char*, FileMode mode) {
-            return core::shared_ptr<core::io::Stream>();
+        enum class Error {
+            CouldNotOpenFile
         };
+
+        virtual auto open(const char*, FileMode mode) -> core::ErrorOr<etl::unique_ptr<core::io::Stream>> {
+            return core::NotImplementedError();
+        };
+
         virtual bool exists(const char* path) const {
             return false;
         };

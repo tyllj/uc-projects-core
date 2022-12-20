@@ -6,6 +6,11 @@
 #define UC_CORE_PIN_H
 
 namespace core { namespace hw {
+    enum class PinLevel : uint8_t {
+        Low = 0,
+        High = 1
+    };
+
     class Input {
         virtual bool isHigh() = 0;
         virtual bool isLow() {
@@ -15,12 +20,12 @@ namespace core { namespace hw {
 
     class Output : public Input{
     public:
-        virtual void set(bool value) = 0;
+        virtual void set(PinLevel value) = 0;
         void setHigh() {
-            set(true);
+            set(PinLevel::High);
         }
         void setLow() {
-            set(false);
+            set(PinLevel::Low);
         }
     };
 }}

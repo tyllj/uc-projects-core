@@ -6,6 +6,8 @@
 #define __WIN32FT4222SPIDEVICESLAVE_H__
 
 #include <mutex>
+#include "core/Error.h"
+#include "core/Try.h"
 #include "Win32Ft4222.h"
 #include "core/hw/spi/SpiDevice.h"
 
@@ -13,16 +15,26 @@ namespace core { namespace platform { namespace pc {
     class Win32Ft4222SpiDeviceSlave : public core::hw::spi::SpiDevice {
     public:
         Win32Ft4222SpiDeviceSlave(Win32Ft4222SpiDeviceSlave &) = delete;
+        Win32Ft4222SpiDeviceSlave(Win32Ft4222SpiDeviceSlave&& other) : _ftLib(etl::move(other._ftLib)), _port(other._port), _mtx(other._mtx) {
+            other._port = nullptr;
+        }
 
-        Win32Ft4222SpiDeviceSlave(Win32Ft4222SpiDeviceSlave &&) = delete;
+        static auto open(const char* deviceName, std::mutex& mtx, FT4222_ClockRate clockRate = FT4222_ClockRate::SYS_CLK_80) -> core::ErrorOr<Win32Ft4222SpiDeviceSlave> {
+            auto ftLib = TRY(Win32Ft4222::load());
 
-        Win32Ft4222SpiDeviceSlave(const char* deviceName, std::mutex& mtx, FT4222_ClockRate clockRate = FT4222_ClockRate::SYS_CLK_80) : _port(nullptr), _mtx(mtx) {
-            if (_ftLib.openEx(const_cast<char *>(deviceName), FT_OPEN_BY_DESCRIPTION, &_port) != FT_OK)
-                throw std::runtime_error("Could not open FT4222 SPI device.");
-            if (_ftLib.setClock(_port, clockRate) != FT4222_OK)
-                throw std::runtime_error("Could not set system clock on FT4222 SPI device.");
-            if (_ftLib.spiSlaveInitEx(_port, SPI_SlaveProtocol::SPI_SLAVE_NO_PROTOCOL) != FT4222_OK)
-                throw std::runtime_error("Could not initialize FT4222 SPI device as SPI slave.");
+            auto port = FT_HANDLE(nullptr);
+            if (ftLib.openEx(const_cast<char *>(deviceName), FT_OPEN_BY_DESCRIPTION, &port) != FT_OK)
+                return Win32Ft4222::Error::CouldNotOpenDevice;
+            if (ftLib.setClock(port, clockRate) != FT4222_OK) {
+                ftLib.close(port);
+                return Win32Ft4222::Error::CouldNotSetDeviceClock;
+            }
+            if (ftLib.spiSlaveInitEx(port, SPI_SlaveProtocol::SPI_SLAVE_NO_PROTOCOL) != FT4222_OK) {
+                ftLib.close(port);
+                return Win32Ft4222::Error::CouldNotOpenDevice;
+            }
+
+            return Win32Ft4222SpiDeviceSlave(etl::move(ftLib), port, mtx);
         }
 
         ~Win32Ft4222SpiDeviceSlave() override {
@@ -55,8 +67,10 @@ namespace core { namespace platform { namespace pc {
         }
 
     private:
+        Win32Ft4222SpiDeviceSlave(Win32Ft4222&& ftLib, FT_HANDLE port, std::mutex& mtx) : _ftLib(etl::move(ftLib)), _port(port), _mtx(mtx) {}
+
         Win32Ft4222 _ftLib;
-        FT_HANDLE _port = nullptr;
+        FT_HANDLE _port;
         std::mutex& _mtx;
     };
 }}}

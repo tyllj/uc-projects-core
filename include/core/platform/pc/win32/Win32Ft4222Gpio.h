@@ -7,6 +7,8 @@
 
 #include <mutex>
 #include <stdint.h>
+#include "core/Error.h"
+#include "core/Try.h"
 #include "core/hw/Pin.h"
 #include "ftdiimports/LibFT4222.h"
 #include "Win32Ft4222.h"
@@ -17,10 +19,10 @@ namespace core { namespace platform { namespace pc {
         class GpioPin : public core::hw::Output {
         public:
             GpioPin(GpioPin&) = delete;
-            GpioPin(GpioPin&&) = delete;
+            GpioPin(GpioPin&&) = default;
 
-            auto set(bool level) -> void final {
-                _port.set(_pin, static_cast<core::hw::PinLevel>(level));
+            auto set(core::hw::PinLevel level) -> void final {
+                _port.set(_pin, level);
             }
 
             auto isHigh() -> bool final {
@@ -33,22 +35,51 @@ namespace core { namespace platform { namespace pc {
             friend class Win32Ft4222GpioPort;
         };
 
-        Win32Ft4222GpioPort(Win32Ft4222GpioPort&) = delete;
-        Win32Ft4222GpioPort(Win32Ft4222GpioPort&&) = delete;
+        static auto open(const char* deviceName, const GPIO_Dir gpioDir[4], std::mutex& mtx,
+                         FT4222_ClockRate clockRate = FT4222_ClockRate::SYS_CLK_80)
+        -> ErrorOr<Win32Ft4222GpioPort> {
+            auto ftLib = TRY(Win32Ft4222::load());
 
-        Win32Ft4222GpioPort(const char* deviceName, const GPIO_Dir gpioDir[4], std::mutex& mtx, FT4222_ClockRate clockRate = FT4222_ClockRate::SYS_CLK_80) :
-            _port(nullptr),
+            auto port = FT_HANDLE(nullptr);
+            if (ftLib.openEx(const_cast<char *>(deviceName), FT_OPEN_BY_DESCRIPTION, &port) != FT_OK)
+                return Win32Ft4222::Error::CouldNotOpenDevice;
+            if (ftLib.setClock(port, clockRate) != FT4222_OK) {
+                ftLib.close(port);
+                return Win32Ft4222::Error::CouldNotSetDeviceClock;
+            }
+            if (ftLib.gpioInit(port, const_cast<GPIO_Dir*>(gpioDir)) != FT4222_OK) {
+                ftLib.close(port);
+                return Win32Ft4222::Error::CouldNotInitializeFunction;
+            }
+            return Win32Ft4222GpioPort(etl::move(ftLib), port, mtx);
+
+        }
+
+        Win32Ft4222GpioPort(Win32Ft4222GpioPort&) = delete;
+        Win32Ft4222GpioPort(Win32Ft4222GpioPort&& other) : _ftLib(etl::move(other._ftLib)),
+            _port(other._port),
+            _mtx(other._mtx),
+            _pin0(*this, 0),
+            _pin1(*this, 1),
+            _pin2(*this, 2),
+            _pin3(*this, 3) {
+            other._port = nullptr;
+        }
+
+        Win32Ft4222GpioPort(Win32Ft4222&& ftLib, FT_HANDLE port, std::mutex& mtx) :
+            _ftLib(etl::move(ftLib)),
+            _port(port),
             _mtx(mtx),
             _pin0(*this, 0),
             _pin1(*this, 1),
             _pin2(*this, 2),
             _pin3(*this, 3) {
-            if (_ftLib.openEx(const_cast<char *>(deviceName), FT_OPEN_BY_DESCRIPTION, &_port) != FT_OK)
-                throw std::runtime_error("Could not open FT4222 SPI device.");
-            if (_ftLib.setClock(_port, clockRate) != FT4222_OK)
-                throw std::runtime_error("Could not set system clock on FT4222 SPI device.");
-            if (_ftLib.gpioInit(_port, const_cast<GPIO_Dir*>(gpioDir)) != FT4222_OK)
-                throw std::runtime_error("Could not initialize FT4222 GPIO port.");
+
+        }
+
+        ~Win32Ft4222GpioPort() {
+            if (_port)
+                _ftLib.close(_port);
         }
 
         auto isHigh(uint8_t pinNo) -> bool {
@@ -70,14 +101,14 @@ namespace core { namespace platform { namespace pc {
         auto setLow(uint8_t pinNo) -> void { return set(pinNo, core::hw::PinLevel::Low); }
         auto setHigh(uint8_t pinNo) -> void { return set(pinNo, core::hw::PinLevel::High); }
 
-        auto& pin0() { return _pin0; }
-        auto& pin1() { return _pin1; }
-        auto& pin2() { return _pin2; }
-        auto& pin3() { return _pin3; }
+        auto pin0() -> core::hw::Output& { return _pin0; }
+        auto pin1() -> core::hw::Output& { return _pin1; }
+        auto pin2() -> core::hw::Output& { return _pin2; }
+        auto pin3() -> core::hw::Output& { return _pin3; }
 
     private:
         Win32Ft4222 _ftLib;
-        FT_HANDLE _port = nullptr;
+        FT_HANDLE _port;
         std::mutex& _mtx;
         GpioPin _pin0;
         GpioPin _pin1;

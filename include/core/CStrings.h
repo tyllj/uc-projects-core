@@ -10,13 +10,12 @@
 #include <cctype>
 #include "shared_ptr.h"
 #include "core/Math.h"
+#include "core/Error.h"
 
 #ifdef _MSC_VER
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #endif
-
-#define SUBSTRING_NOT_FOUND -1
 
 namespace core {
     class CString : public core::shared_ptr<char[]> {
@@ -66,6 +65,10 @@ namespace core {
 }
 
 namespace core { namespace cstrings {
+
+    enum class Error {
+        SubstringNotFound
+    };
 
     template<size_t n>
     inline void copyTo(char (&destination)[n], const char* source) {
@@ -180,19 +183,18 @@ namespace core { namespace cstrings {
         return true;
     }
 
-
-    inline int32_t indexOf(const char* haystack, const char* needle) {
+    inline ErrorOr<size_t> indexOf(const char* haystack, const char* needle) {
         const char* ptr = strstr(haystack, needle);
-        if (ptr == NULL)
-            return SUBSTRING_NOT_FOUND;
+        if (ptr == nullptr)
+            return Error::SubstringNotFound;
         else
             return static_cast<int32_t>(ptr - haystack);
     }
 
-    inline int32_t indexOf(const char* haystack, const char needle) {
+    inline ErrorOr<size_t> indexOf(const char* haystack, const char needle) {
         const char* ptr = strchr(haystack, needle);
-        if (ptr == NULL)
-            return SUBSTRING_NOT_FOUND;
+        if (ptr == nullptr)
+            return Error::SubstringNotFound;
         else
             return static_cast<int32_t>(ptr - haystack);
     }

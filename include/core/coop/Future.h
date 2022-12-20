@@ -5,6 +5,7 @@
 #ifndef UC_CORE_FUTURE_H
 #define UC_CORE_FUTURE_H
 
+#include "etl/utility.h"
 #include "etl/optional.h"
 #include "etl/delegate.h"
 #include "core/shared_ptr.h"
@@ -30,8 +31,8 @@ namespace core { namespace coop {
 
     template<typename TResult>
     struct FutureResult {
-        FutureResult(etl::optional<TResult> value, bool isCompleted) : value(value), delay(0), isCompleted(isCompleted) {}
-        FutureResult(uint64_t delay) : value(etl::nullopt), delay(delay), isCompleted(false) {}
+        explicit FutureResult(etl::optional<TResult> value, bool isCompleted) : value(value), delay(0), isCompleted(isCompleted) {}
+        explicit FutureResult(uint64_t delay) : value(etl::nullopt), delay(delay), isCompleted(false) {}
         etl::optional<TResult> value;
         uint64_t delay;
         bool isCompleted;
@@ -40,8 +41,8 @@ namespace core { namespace coop {
 
     template<>
     struct FutureResult<void> {
-        FutureResult(bool isCompleted) : delay(0), isCompleted(isCompleted) {}
-        FutureResult(uint64_t delay) : delay(delay), isCompleted(false) {}
+        explicit FutureResult(bool isCompleted) : delay(0), isCompleted(isCompleted) {}
+        explicit FutureResult(uint64_t delay) : delay(delay), isCompleted(false) {}
         uint64_t delay;
         bool isCompleted;
         typedef void resultType;
@@ -119,9 +120,8 @@ namespace core { namespace coop {
     template<typename TResult, typename TParentSliceFunctor, typename TContinuationFunctor>
     class FutureWithContinuation : public FutureBase {
     public:
-        FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation) {
-
-        }
+        FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation) {}
+        FutureWithContinuation(Future<TResult, TParentSliceFunctor> future, TContinuationFunctor&& continuation) : _future(future), _continuation(continuation) {}
 
         auto runSlice() -> bool final {
             if (isCompleted())
@@ -163,9 +163,8 @@ namespace core { namespace coop {
     template<typename TParentSliceFunctor, typename TContinuationFunctor>
     class FutureWithContinuation<void, TParentSliceFunctor, TContinuationFunctor> : public FutureBase {
     public:
-        FutureWithContinuation(Future<void, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation) {
-
-        }
+        FutureWithContinuation(Future<void, TParentSliceFunctor> future, TContinuationFunctor continuation) : _future(future), _continuation(continuation) {}
+        FutureWithContinuation(Future<void, TParentSliceFunctor>&& future, TContinuationFunctor&& continuation) : _future(future), _continuation(continuation) {}
 
         auto runSlice() -> bool final {
             if (isCompleted())
@@ -209,6 +208,7 @@ namespace core { namespace coop {
     public:
         // TSliceFunctor: FutureResult<TResult>(loopBody)(void)
         Future(TSliceFunctor loopBody) : _functor(loopBody) {}
+        Future(TSliceFunctor&& loopBody) : _functor(etl::move(loopBody)) {}
         Future(TResult result) : FutureBase(true), _functor([](){}), _result(result) {}
 
         auto runSlice() -> bool final {
@@ -267,7 +267,7 @@ namespace core { namespace coop {
     class Future<void, TSliceFunctor> : public FutureBase {
     public:
         // TSliceFunctor: FutureResult<TResult>(loopBody)(void)
-        Future(TSliceFunctor loopBody) : _functor(loopBody) {}
+        Future(TSliceFunctor&& loopBody) : _functor(loopBody) {}
 
         auto runSlice() -> bool final {
             if (isCompleted())
@@ -316,9 +316,9 @@ namespace core { namespace coop {
     };
 
     template<typename TSliceFunc>
-    auto async(TSliceFunc sliceFunc) {
+    auto async(TSliceFunc&& sliceFunc) {
         using resultType = typename decltype(sliceFunc())::resultType;
-        return Future<resultType ,TSliceFunc>(sliceFunc);
+        return Future<resultType ,TSliceFunc>(etl::move(sliceFunc));
     }
 
     auto delayms(uint64_t millis) {

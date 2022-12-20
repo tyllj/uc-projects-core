@@ -6,8 +6,6 @@
 #define UC_CORE_CANINTERFACE_H
 
 #include <stdint.h>
-#include "core/unique_ptr.h"
-
 
 
 typedef uint16_t canid_t;

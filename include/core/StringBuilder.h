@@ -18,53 +18,52 @@ namespace core {
     public:
         StringBuilder() : StringBuilder(_stringBuilderBuffer, sizeof(_stringBuilderBuffer)) {}
 
-        StringBuilder(char* str, size_t length) : _buffer(str), _length(length), _position(0) {}
+        StringBuilder(char* str, size_t length) : _buffer(str), _size(length), _position(0) {}
         template<size_t n>
         StringBuilder(char (&str)[n]) : StringBuilder(str, n) {}
-        size_t length() const { return _position; }
+        auto length() const -> size_t { return _position; }
 
-
-        StringBuilder& append(const char* str) {
+        auto append(const char* str) -> StringBuilder& {
             size_t i = 0;
-            while (_position < _length && str[i] != '\0') {
-                _buffer[_position] = str[i];
+            while (_position < (_size - 1) && str[i] != '\0') {
+                *end() = str[i];
                 i++;
                 seek(1);
             }
-            _buffer[_position] = '\0';
+            *end() = '\0';
             return *this;
         }
 
-        StringBuilder& append(const char* str, uint32_t count) {
+        auto append(const char* str, uint32_t count) -> StringBuilder& {
             size_t i = 0;
-            while (_position < _length && _position < count && str[i] != '\0') {
-                _buffer[_position] = str[i];
+            while (_position < (_size - 1) && _position < count && str[i] != '\0') {
+                *end() = str[i];
                 i++;
                 seek(1);
             }
-            _buffer[_position] = '\0';
+            *end() = '\0';
             return *this;
         }
 
-        StringBuilder& append(char c) {
-            if (_position >= _length)
+        auto append(char c) -> StringBuilder& {
+            if (_position >= (_size - 1))
                 return *this;
 
             *end() = c;
             seek(1);
-            _buffer[_position] = '\0';
+            *end() = '\0';
             return *this;
         }
 
-        StringBuilder& append(float value, int8_t minWidth, uint8_t decimalPlaces) {
+        auto append(float value, int8_t minWidth, uint8_t decimalPlaces) -> StringBuilder& {
             return append(static_cast<double>(value), minWidth, decimalPlaces);
         }
 
-        StringBuilder& append(double value, int8_t minWidth, uint8_t decimalPlaces) {
+        auto append(double value, int8_t minWidth, uint8_t decimalPlaces) -> StringBuilder& {
             uint8_t width = decimalLength(static_cast<int32_t>(value)) + decimalPlaces;
             width += value < 0.0 ? 2 : 1; // decimal point and minus sign.
             width = max(width, static_cast<uint8_t>(abs(minWidth)));
-            if (_position + width >= _length)
+            if (_position + width >= _size)
                 return *this;
 
             core::dtostrf(value, minWidth, decimalPlaces, &_buffer[_position]);
@@ -72,19 +71,19 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(float value) {
+        auto append(float value) -> StringBuilder& {
             return append(static_cast<double>(value));
         }
 
-        StringBuilder& append(double value) {
+        auto append(double value) -> StringBuilder& {
             uint8_t width = decimalLength(static_cast<int32_t>(value)) + 2;
             width += value < 0.0 ? 2 : 1;
             uint8_t decimalPlaces = width == 3 ? 2 : 1;
             return append(value, width, decimalPlaces);
         }
 
-        StringBuilder& append(int32_t value, int8_t width, char padding = ' ') {
-            if (_position + width >= _length)
+        auto append(int32_t value, int8_t width, char padding = ' ') -> StringBuilder& {
+            if (_position + width >= _size)
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
@@ -94,18 +93,20 @@ namespace core {
             seek(intWidth);
             return *this;
         }
-        StringBuilder& append(int32_t value) {
+
+        auto append(int32_t value) -> StringBuilder& {
             uint8_t intWidth = decimalLength(value);
-            if (_position + intWidth >= _length)
+            if (_position + intWidth >= _size)
                 return *this;
 
             core::ltoa(value, end(), 10);
             seek(intWidth);
             return *this;
         }
-        StringBuilder& appendHex(int32_t value)  {
+
+        auto appendHex(int32_t value) -> StringBuilder& {
             size_t width = 8;
-            if (_position + width >= _length)
+            if (_position + width >= _size)
                 return *this;
 
             core::ltoa(value, end(), 16);
@@ -114,8 +115,8 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(int16_t value, int8_t width, char padding = ' ') {
-            if (_position + width >= _length)
+        auto append(int16_t value, int8_t width, char padding = ' ') -> StringBuilder& {
+            if (_position + width >= (_size - 1))
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
@@ -125,18 +126,20 @@ namespace core {
             seek(intWidth);
             return *this;
         }
-        StringBuilder& append(int16_t value) {
+
+        auto append(int16_t value) -> StringBuilder& {
             uint8_t intWidth = decimalLength(value);
-            if (_position + intWidth >= _length)
+            if (_position + intWidth >= (_size - 1))
                 return *this;
 
             core::itoa(value, end(), 10);
             seek(strlen(end()));
             return *this;
         }
-        StringBuilder& appendHex(int16_t value) {
+
+        auto appendHex(int16_t value) -> StringBuilder& {
             size_t width = 4;
-            if (_position + width >= _length)
+            if (_position + width >= (_size - 1))
                 return *this;
 
             core::ltoa(value, end(), 16);
@@ -145,8 +148,8 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(int8_t value, int8_t width, char padding = ' ') {
-            if (_position + width >= _length)
+        auto append(int8_t value, int8_t width, char padding = ' ') -> StringBuilder&{
+            if (_position + width >= (_size - 1))
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
@@ -156,18 +159,19 @@ namespace core {
             seek(intWidth);
             return *this;
         }
-        StringBuilder& append(int8_t value) {
+
+        auto append(int8_t value) -> StringBuilder& {
             uint8_t intWidth = decimalLength(value);
-            if (_position + intWidth >= _length)
+            if (_position + intWidth >= (_size - 1))
                 return *this;
 
             core::itoa((int16_t)value, end(), 10);
             seek(strlen(end()));
             return *this;
         }
-        StringBuilder& appendHex(int8_t value) {
+        auto appendHex(int8_t value) -> StringBuilder& {
             size_t width = 2;
-            if (_position + width >= _length)
+            if (_position + width >= (_size - 1))
                 return *this;
 
             core::itoa(value, end(), 16);
@@ -176,8 +180,8 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(uint32_t value, int8_t width, char padding = ' ') {
-            if (_position + width >= _length)
+        auto append(uint32_t value, int8_t width, char padding = ' ') -> StringBuilder& {
+            if (_position + width >= (_size - 1))
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
@@ -187,18 +191,18 @@ namespace core {
             seek(intWidth);
             return *this;
         }
-        StringBuilder& append(uint32_t value) {
+        auto append(uint32_t value) -> StringBuilder& {
             uint8_t intWidth = decimalLength(value);
-            if (_position + intWidth >= _length)
+            if (_position + intWidth >= (_size - 1))
                 return *this;
 
             core::ultoa(value, end(), 10);
             seek(strlen(end()));
             return *this;
         }
-        StringBuilder& appendHex(uint32_t value) {
+        auto appendHex(uint32_t value) -> StringBuilder& {
             size_t width = 8;
-            if (_position + width >= _length)
+            if (_position + width >= (_size - 1))
                 return *this;
 
             core::ultoa(value, end(), 16);
@@ -207,8 +211,8 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(uint16_t value, int8_t width, char padding = ' ') {
-            if (_position + width >= _length)
+        auto append(uint16_t value, int8_t width, char padding = ' ') -> StringBuilder& {
+            if (_position + width >= (_size - 1))
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
@@ -218,18 +222,20 @@ namespace core {
             seek(intWidth);
             return *this;
         }
-        StringBuilder& append(uint16_t value) {
+
+        auto append(uint16_t value) -> StringBuilder& {
             uint8_t intWidth = decimalLength(value);
-            if (_position + intWidth >= _length)
+            if (_position + intWidth >= (_size - 1))
                 return *this;
 
             core::ultoa(value, end(), 10);
             seek(strlen(end()));
             return *this;
         }
-        StringBuilder& appendHex(uint16_t value) {
+
+        auto appendHex(uint16_t value) -> StringBuilder& {
             size_t width = 4;
-            if (_position + width >= _length)
+            if (_position + width >= (_size - 1))
                 return *this;
 
             core::ultoa(value, end(), 16);
@@ -238,8 +244,8 @@ namespace core {
             return *this;
         }
 
-        StringBuilder& append(uint8_t value, int8_t width, char padding = ' ') {
-            if (_position + width >= _length)
+        auto append(uint8_t value, int8_t width, char padding = ' ') -> StringBuilder& {
+            if (_position + width >= (_size - 1))
                 return *this;
             uint8_t intWidth = decimalLength(value);
             if (intWidth > width)
@@ -249,18 +255,20 @@ namespace core {
             seek(intWidth);
             return *this;
         }
-        StringBuilder& append(uint8_t value) {
+
+        auto append(uint8_t value) -> StringBuilder& {
             uint8_t intWidth = decimalLength(value);
-            if (_position + intWidth >= _length)
+            if (_position + intWidth >= (_size - 1))
                 return *this;
 
             core::ultoa((uint16_t)value, end(), 10);
             seek(strlen(end()));
             return *this;
         }
-        StringBuilder& appendHex(uint8_t value) {
+
+        auto appendHex(uint8_t value) -> StringBuilder& {
             size_t width = 2;
-            if (_position + width >= _length)
+            if (_position + width >= (_size - 1))
                 return *this;
 
             core::ultoa((uint16_t)value, end(), 16);
@@ -269,7 +277,76 @@ namespace core {
             return *this;
         }
 
-        uint8_t decimalLength(uint8_t value) const {
+        auto lineBreak() -> StringBuilder& {
+            return append(::core::cstrings::newLine(cstrings::LF));
+        }
+
+        auto lineBreak(::core::cstrings::NewLineMode mode) -> StringBuilder& {
+            return append(::core::cstrings::newLine(mode));
+        }
+
+        template<typename T>
+        auto operator+(T var) -> StringBuilder& {
+            return append(var);
+        }
+
+        template<typename T>
+        auto operator+=(T var) -> StringBuilder& {
+            return append(var);
+        }
+
+        auto clear() -> void {
+			_position = 0;
+			*end() = '\0';
+        }
+
+        auto toString(char * buffer, size_t n) -> void {
+            strncpy(buffer, _buffer, n - 1);
+            buffer[n] = 0;
+        }
+
+        template<size_t n>
+        auto toString(char (&buffer)[n]) const -> void {
+            toString(buffer, n);
+        }
+
+        auto toString() const -> core::CString {
+            return { _buffer };
+        }
+
+        operator const char*() const { return _buffer; }
+
+        char* begin() const { return &_buffer[0]; }
+
+        char* end() const { return &_buffer[_position]; }
+
+    private:
+
+        void seek(size_t width) {
+            _position += width;
+        }
+
+        void pad(size_t width, char padding) {
+            memset(end(), padding, width);
+            seek(width);
+        }
+
+        void rightAlign(char* str, uint8_t places) {
+            size_t length = strlen(str);
+            int16_t offset = places - length;
+            if (offset < 0)
+                return;
+
+            for (int i = length; i >= 0; i--)
+                str[i + offset] = str[i];
+
+            for (int i = offset - 1; i >= 0; i--)
+                str[i] = ' ';
+
+            str[places] = '\0';
+        }
+
+        static auto decimalLength(uint8_t value) -> uint8_t {
             if (value < 10)
                 return 1;
             if (value < 100)
@@ -277,7 +354,7 @@ namespace core {
             return 3;
         }
 
-        uint8_t decimalLength(uint16_t value) const {
+        static auto decimalLength(uint16_t value) -> uint8_t {
             if (value < 10)
                 return 1;
             if (value < 100)
@@ -289,7 +366,7 @@ namespace core {
             return 5;
         }
 
-        uint8_t decimalLength(uint32_t value) const {
+        static auto decimalLength(uint32_t value) -> uint8_t {
             if (value <= UINT16_MAX)
                 return decimalLength((uint16_t) value);
             uint8_t length = 4;
@@ -299,7 +376,7 @@ namespace core {
             return length;
         }
 
-        uint8_t decimalLength(int8_t value) const {
+        static auto decimalLength(int8_t value) -> uint8_t {
             if (value <= -100)
                 return 4;
             if (value <= -10)
@@ -313,7 +390,7 @@ namespace core {
             return 3;
         }
 
-        uint8_t decimalLength(int16_t value) const {
+        static auto decimalLength(int16_t value) -> uint8_t {
             if (value <= -10000)
                 return 6;
             if (value <= -1000)
@@ -335,7 +412,7 @@ namespace core {
             return 5;
         }
 
-        uint8_t decimalLength(int32_t value) const {
+        static auto decimalLength(int32_t value) -> uint8_t {
             if (value <= INT16_MAX && value >= INT16_MIN)
                 return decimalLength((int16_t) value);
             if (value >= 0) {
@@ -353,77 +430,8 @@ namespace core {
             }
         }
 
-        StringBuilder& lineBreak() {
-            return append(::core::cstrings::newLine(cstrings::LF));
-        }
-
-        StringBuilder& lineBreak(::core::cstrings::NewLineMode mode) {
-            return append(::core::cstrings::newLine(mode));
-        }
-
-        template<typename T>
-        StringBuilder& operator+(T var) {
-            return this->append(var);
-        }
-
-        template<typename T>
-        StringBuilder& operator+=(T var) {
-            return append(var);
-        }
-
-        void clear() {
-			_position = 0;
-			_buffer[_position] = '\0';
-        }
-
-        void toString(char * buffer, size_t n) {
-            strncpy(buffer, _buffer, n - 1);
-            buffer[n] = 0;
-        }
-
-        template<size_t n>
-        void toString(char (&buffer)[n]) {
-            toString(buffer, n);
-        }
-
-        core::CString toString() {
-            return { _buffer };
-        }
-
-        operator const char*() const { return _buffer; }
-
-        inline char* begin() const { return &_buffer[_position]; }
-
-        inline char* end() const { return &_buffer[_position]; }
-
-    private:
-
-
-        inline void seek(size_t width) {
-            _position += width;
-        }
-
-        inline void pad(size_t width, char padding) {
-            memset(end(), padding, width);
-            seek(width);
-        }
-
-        void rightAlign(char* str, uint8_t places) {
-            size_t length = strlen(str);
-            int16_t offset = places - length;
-            if (offset < 0)
-                return;
-
-            for (int i = length; i >= 0; i--)
-                str[i + offset] = str[i];
-
-            for (int i = offset - 1; i >= 0; i--)
-                str[i] = ' ';
-
-            str[places] = '\0';
-        }
         char* _buffer;
-        size_t _length;
+        size_t _size;
         size_t _position;
     };
 }

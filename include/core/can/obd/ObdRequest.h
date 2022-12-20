@@ -6,43 +6,52 @@
 #define UC_CORE_OBDREQUEST_H
 
 #include "ObdPidValue.h"
+#include "etl/result.h"
 
 namespace core { namespace can { namespace obd {
     class ObdRequest {
     public:
+        enum class Error {
+            MaxNumberOfParameterIdsExceeded,
+            ParameterIdNotRegistered
+        };
+
         ObdRequest() {}
         ObdRequest& add(uint8_t pid, uint8_t length) {
             add( ObdPidValue::empty(pid, length));
             return *this;
         }
 
-        void add(ObdPidValue value) {
-            if (_pidCount < 6)
-                _pid[_pidCount++] = value;
+        etl::result<void, Error> add(ObdPidValue value) {
+            if (_pidCount >= 6)
+                return Error::MaxNumberOfParameterIdsExceeded;
 
+            _pid[_pidCount++] = value;
+            return {};
         }
 
-        void update(ObdPidValue value) {
+        etl::result<void, Error> update(ObdPidValue value) {
             for (size_t i = 0; i < _pidCount; i++) {
                 if (_pid[i].Pid == value.Pid) {
                     _pid[i] = value;
-                    return;
+                    return {};
                 }
             }
+            return Error::ParameterIdNotRegistered;
         }
 
-        ObdPidValue getByPid(uint8_t pid) const {
+        etl::result<ObdPidValue, Error> getByPid(uint8_t pid) const {
             for (size_t i = 0; i < _pidCount; i++)
                 if (_pid[i].Pid == pid)
                     return _pid[i];
 
-            return InvalidPid;
+            return Error::ParameterIdNotRegistered;
         }
 
-        ObdPidValue at(uint8_t index) {
+        etl::result<ObdPidValue, Error> at(uint8_t index) {
             if (index < _pidCount)
                 return _pid[index];
-            return InvalidPid;
+            return Error::ParameterIdNotRegistered;
         }
 
         uint8_t count() {

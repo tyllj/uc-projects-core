@@ -24,8 +24,28 @@ namespace core { namespace can { namespace obd {
     constexpr uint8_t OBD_VEHICLE_INFORMATION = 0x09;
     constexpr uint8_t OBD_GET_PERMAMENT_DTC = 0x0A;
 
+    template<typename TFunctor>
+    class OnScopeExit {
+    public:
+        OnScopeExit(TFunctor functor) : _scopeExitFunctor(functor), _owner(true) {}
+
+        OnScopeExit(OnScopeExit& other) = delete;
+        OnScopeExit(OnScopeExit&& other) : _scopeExitFunctor(other._scopeExitFunctor), _owner(other._owner) {
+            other._owner = false;
+        }
+        ~OnScopeExit() {
+            if (_owner)
+                _scopeExitFunctor();
+        }
+    private:
+        TFunctor _scopeExitFunctor;
+        bool _owner;
+    };
+
     class OnBoardDiagnostics {
     public:
+
+
         OnBoardDiagnostics(core::coop::IDispatcher& dispatcher, ICanInterface& can, canid_t ecuId = 0x07E0) : _dispatcher(dispatcher), _can(can), _ecuId(ecuId) {
 
         }
@@ -33,12 +53,12 @@ namespace core { namespace can { namespace obd {
         auto getCurrentData(ObdRequest request) {
             uint8_t queryMsg[7] = {OBD_GET_CURRENT_DATA};
             uint8_t i = 0;
-            for (; i < request.count(); i++)
-                queryMsg[i + 1] = request.at(i).Pid;
+            for (; request.at(i).has_value(); i++)
+                queryMsg[i + 1] = request.at(i).value().Pid;
             initTp(); // TODO: write an RAII wrapper which gets moved into lambda
             _isotp->send(queryMsg, i + 1);
 
-            return core::coop::async([this, request = request](){
+            return core::coop::async([this, request = request, teardown = OnScopeExit([this]{deinitTp();})](){
                 IsoTpSocket& isotp = this->_isotp.value();
                 isotp.receiveAndTransmit();
                 IsoTpPacket p;
@@ -47,7 +67,7 @@ namespace core { namespace can { namespace obd {
                     size_t j = 1; // skip [0] byte, which is service id.
                     while (j < p.length()) {
                         uint8_t pid = p.at(j++);
-                        uint8_t pidLength = request.getByPid(pid).DataLength;
+                        uint8_t pidLength = request.getByPid(pid).value().DataLength;
                         ObdPidValue pidValue(pid, nullptr, pidLength);
                         for (uint8_t k = 0; k < pidLength; k++, j++)
                             pidValue[k] = p.at(j); // PIDs with length > 4 are handled safely by the [] operator, but will not yield useful results

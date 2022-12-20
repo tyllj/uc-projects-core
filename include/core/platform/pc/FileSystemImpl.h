@@ -5,7 +5,7 @@
 #ifndef UC_CORE_FILESYSTEMIMPL_H
 #define UC_CORE_FILESYSTEMIMPL_H
 
-
+#include "etl/result.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -15,50 +15,51 @@
 #include "core/io/FileSystem.h"
 #include "core/io/FileSystemInfo.h"
 #include "core/io/Stream.h"
+#include "core/Error.h"
+#include "core/Try.h"
 
 namespace core { namespace platform { namespace pc {
 class UnixFileStream : public core::io::Stream {
+private:
+    typedef etl::unique_ptr<FILE, decltype(&fclose)> NativeFile;
     public:
-        UnixFileStream(const char* path, core::io::FileMode mode) {
-            _file = fopen(path, fileModeToString(mode));
+        static auto open(const char* path, core::io::FileMode mode) -> core::ErrorOr<UnixFileStream> {
+            auto file = fopen(path, fileModeToString(mode));
+            if (file == nullptr)
+                return core::io::FileSystem::Error::CouldNotOpenFile;
+            return UnixFileStream(file);
         }
-        ~UnixFileStream() {
-            flush();
-            close();
+
+        UnixFileStream(FILE* file) : _file(file, &fclose) {
+
         }
-        void close() final {
-            if (_file != NULL)
-                fclose(_file);
+
+        void close() final { // TODO: The stream interface should not have a close method, use RAII instead.
+            // fclose(_file.get());
         }
         void flush() final {
-            if (_file != NULL)
-                fflush(_file);
+            fflush(_file.get());
         }
-        bool canRead() const final { return _file != NULL; }
-        bool canWrite() const final { return _file != NULL; }
+        bool canRead() const final { return true; } // TODO: should reflect the r/w access
+        bool canWrite() const final { return true; }// TODO: should reflect the r/w access
         size_t length() const final {
-            if (_file == NULL)
-                return 0;
             int32_t pos = position();
-            fseek(_file, 0L, SEEK_END);
+            fseek(_file.get(), 0L, SEEK_END);
             int32_t size = position();
-            fseek(_file, pos, SEEK_SET);
+            fseek(_file.get(), pos, SEEK_SET);
             return size;
         }
-        size_t position() const final { return ftell(_file); }
+        size_t position() const final { return ftell(_file.get()); }
         void writeByte(uint8_t byte) final {
-            if (_file != NULL)
-                fputc(byte, _file);
+            fputc(byte, _file.get());
         }
         int32_t seek(int32_t offset) final {
-            if (_file == NULL)
-                return 0;
-            return fseek(_file, offset, SEEK_CUR);
+            return fseek(_file.get(), offset, SEEK_CUR);
         }
 
         int32_t readByte() final {
             uint8_t byte;
-            if (_file == NULL || ((uint8_t) EOF) == (byte = fgetc(_file)))
+            if (((uint8_t) EOF) == (byte = fgetc(_file.get())))
                 return -1;
             return (int32_t) byte;
         }
@@ -77,50 +78,50 @@ class UnixFileStream : public core::io::Stream {
         }
 
     private:
-        FILE* _file;
+        NativeFile _file;
     };
 
     class NativeFileSystem : public core::io::FileSystem {
     public:
-        core::shared_ptr<core::io::Stream> open(const char* path, core::io::FileMode mode) final {
-            return core::shared_ptr<core::io::Stream>(new UnixFileStream(path, mode));
+        auto open(const char* path, core::io::FileMode mode) -> core::ErrorOr<etl::unique_ptr<core::io::Stream>> final {
+            auto s = TRY(UnixFileStream::open(path, mode));
+            return etl::unique_ptr<core::io::Stream>(new UnixFileStream { etl::move(s) });
         };
 
-        bool exists(const char* path) const final {
+        auto exists(const char* path) const -> bool final {
             if (access(path, F_OK) == 0)
                 return true;
             return false;
         };
 
-        uint16_t forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = core::io::FS_TAKEALL, core::io::FileSystemEnumerationOptions options =
-        core::io::FILES | core::io::DIRECTORIES) final {
+        auto forEach(const char* path, etl::delegate<void(core::io::FileSystemInfo&)> action, uint16_t skip = 0, uint16_t take = core::io::FS_TAKEALL, core::io::FileSystemEnumerationOptions options =
+        core::io::FILES | core::io::DIRECTORIES) -> uint16_t final {
             uint16_t i = 0;
             uint16_t j = 0;
             DIR *d;
             struct dirent *fsentry;
             struct stat filestat;
             d = opendir(path);
-            if (d) {
-                while ((fsentry = readdir(d)) != NULL) {
-                    if (i >= skip) {
-                        if (i - skip < take) {
-                            j++;
-                            stat(fsentry->d_name, &filestat);
-                            core::io::FileSystemEntryType type;
-                            type = S_ISDIR(filestat.st_mode) ? core::io::FS_DIRECTORY : core::io::FS_FILE;
+            if (!d)
+                return 0; // TODO: return error when path can't be opened.
+            while ((fsentry = readdir(d)) != nullptr) {
+                if (i >= skip) {
+                    if (i - skip < take) {
+                        j++;
+                        stat(fsentry->d_name, &filestat);
+                        auto type = S_ISDIR(filestat.st_mode) ? core::io::FS_DIRECTORY : core::io::FS_FILE;
 
-                            core::io::FileSystemInfo fsInfo(*this, fsentry->d_name, type);
-                            if (((options | core::io::FILES) && (type == core::io::FS_FILE)) ||
-                                    ((options | core::io::DIRECTORIES) && (type == core::io::FS_DIRECTORY)))
-                                action(fsInfo);
-                        }
-                        else
-                            break;
+                        auto fsInfo = core::io::FileSystemInfo(*this, fsentry->d_name, type);
+                        if (((options | core::io::FILES) && (type == core::io::FS_FILE)) ||
+                            ((options | core::io::DIRECTORIES) && (type == core::io::FS_DIRECTORY)))
+                            action(fsInfo);
                     }
-                    i++;
+                    else
+                        break;
                 }
-                closedir(d);
+                i++;
             }
+            closedir(d);
             return j;
         };
     };

@@ -9,8 +9,8 @@
 #include "hal/tick.h"
 
 namespace core {
-    void sleepms(uint64_t delay) { core::hal::sleepms(delay); }
-    uint64_t millis() { return core::hal::millis(); }
+    inline void sleepms(uint64_t delay) { core::hal::sleepms(delay); }
+    inline uint64_t millis() { return core::hal::millis(); }
 
     inline uint64_t millisPassedSince(uint64_t timestamp) {
         return core::hal::millis() - timestamp;
