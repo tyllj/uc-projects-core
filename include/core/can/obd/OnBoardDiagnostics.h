@@ -5,7 +5,7 @@
 #ifndef UC_CORE_ONBOARDDIAGNOSTICS_H
 #define UC_CORE_ONBOARDDIAGNOSTICS_H
 
-#include "core/coop/Future.h"
+#include "core/Future.h"
 #include "core/can/ICanInterface.h"
 #include "core/can/IsoTpSocket.h"
 #include "etl/optional.h"

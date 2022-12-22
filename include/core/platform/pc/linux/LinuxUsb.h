@@ -16,22 +16,17 @@ namespace core { namespace platform { namespace pc { namespace usb {
     static constexpr char LINUX_QUERY_VID[] = "udevadm info -a -n %s | grep '{idVendor}' | head -n1";
     static constexpr char LINUX_QUERY_PID[] = "udevadm info -a -n %s | grep '{idProduct}' | head -n1";
 
-    void findUsbSerialPortByProductId(char *devicePath, size_t n, const char *vid, const char *pid) {
-        auto runCommand = [](char *result, size_t n, const char *c) {
+    auto findUsbSerialPortByProductId(char *devicePath, size_t n, const char *vid, const char *pid) -> core::ErrorOr<void> {
+        auto runCommand = [](char *result, size_t n, const char *c) -> core::ErrorOr<void> {
             FILE *fp;
             fp = popen(c, "r");
-            if (fp == NULL) {
-                throw std::runtime_error("Could not run command.");
-            }
+            VERIFY(fp != nullptr, "Could not run command.");
+            auto closeProcess = core::Defer([fp] { pclose(fp); });
 
-            /* Read the output a line at a time - output it. */
-            if (fgets(result, n - 1, fp) == NULL) {
-                // fgets returned null, so there was no output. Return empty string.
-                result[0] = '\0';
-            }
-            pclose(fp);
+            /* Read first line of output. */
+            VERIFY(fgets(result, n - 1, fp) != NULL, "Command did not generate any output.")
+            return {}
         };
-
 
         char command[128];
         char cmdOut[128];
@@ -45,7 +40,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
             if (core::cstrings::isNullOrEmpty(cmdOut)
                 || !core::cstrings::contains(cmdOut, '\"')) {
                 core::cstrings::empty(devicePath);
-                return;
+                return core::AssertionError("Unexpected command output.");
             }
 
             char pidOrVid[5] = {'\0'};
@@ -58,17 +53,17 @@ namespace core { namespace platform { namespace pc { namespace usb {
             if (core::cstrings::isNullOrEmpty(cmdOut)
                 || !core::cstrings::contains(cmdOut, '\"')) {
                 core::cstrings::empty(devicePath);
-                return;
+                return core::AssertionError("Unexpected command output.");
             }
 
             strncpy(pidOrVid, strchr(cmdOut, '\"') + 1, 4);
             if (!core::cstrings::equalsCaseInvariant(pidOrVid, pid))
                 continue;
 
-            return; // device with current devicePath matches VID and PID.
+            return {}; // device with current devicePath matches VID and PID.
         }
         core::cstrings::empty(devicePath);
-        return;
+        return core::Error(0x005BFA11, "No serial port found for this usb device type.");
     }
 }}}}
 

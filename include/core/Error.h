@@ -64,7 +64,7 @@ namespace core {
 #endif
     };
 
-    auto terminateOnUnhandledError(Error const& e) {
+    auto terminateOnUnhandledError(Error const& e) const {
 #if defined(CORE_ERROR_MESSAGES)
         printf("\nUnhandled error: error_code(): %x (%i), what(): %s\n", e.error_code(), e.error_code(), e.what());
 #else
@@ -86,9 +86,10 @@ namespace core {
         template <typename TErrorCode>
         ErrorOr(TErrorCode code) : _result(Error(static_cast<int32_t>(code))) {}
 
-        auto value() -> TResult const& {
+        auto value() const -> TResult const& {
             if (is_error()) [[unlikely]]
                 terminateOnUnhandledError(error());
+
             return _result.value();
         }
 
@@ -98,7 +99,7 @@ namespace core {
             return etl::move(_result.value());
         }
 
-        auto error() -> Error const& {
+        auto error() const -> Error const& {
             if (!is_error()) [[unlikely]] {
                 auto e = Error(0x0BADC0DE, "error() evaluated on successful result.");
                 terminateOnUnhandledError(e);
@@ -106,12 +107,20 @@ namespace core {
             return _result.error();
         }
 
-        auto is_error() -> bool {
+        auto is_error() const -> bool {
             return _result.is_error();
         }
 
-        auto is_success() -> bool {
+        auto is_success() const-> bool {
             return !_result.is_error();
+        }
+
+        auto operator* () const -> TResult const&{
+            return value();
+        }
+
+        auto operator-> () const -> TResult const* {
+            return &(value());
         }
 
         typedef TResult ResultType;
@@ -142,6 +151,43 @@ namespace core {
 
     DEFINE_CORE_ERROR(NotImplementedError, 0xDEADC0DE, "Function is not implemented.");
     DEFINE_CORE_ERROR(InvalidArgumentError, 0x00BADA86, "An invalid argument was specified.");
+    DEFINE_CORE_ERROR(NullPointerError, 0x0D15EA5E, "A nullptr was found.");
+    DEFINE_CORE_ERROR(AssertionError, 0xDEFEC8ED, "An assertion failed.");
+
+    template<size_t n = sizeof("An assertion failed.")>
+    inline static auto verify(bool condition, const char (&errorMsg)[n] = "An assertion failed.") -> ErrorOr<void> {
+        if (!condition) [[unlikely]] {
+            return AssertionError(errorMsg);
+        }
+        return {};
+    }
+
+    template<size_t n = sizeof("An assertion failed.")>
+    inline static auto enforce(bool condition, const char (&errorMsg)[n] = "An assertion failed.") -> void {
+        auto v = verify(condition, errorMsg);
+        if (v.is_error())
+            terminateOnUnhandledError(v.error());
+    }
+
+    template<typename T, size_t n = sizeof("A nullptr was found.")>
+    inline static auto verifyNotNull(T* ptr, const char (&errorMsg)[n] = "A nullptr was found.") -> ErrorOr<T*> {
+        if (ptr == nullptr) [[unlikely]] {
+            return NullPointerError(errorMsg);
+
+        }
+        return ptr;
+    }
+
+    template<typename T, size_t n = sizeof("A nullptr was found.")>
+    inline static auto enforceNotNull(T* ptr, const char (&errorMsg)[n] = "A nullptr was found.") -> T* {
+        auto v = verifyNotNull(ptr, errorMsg);
+        if (v.is_error())
+            terminateOnUnhandledError(v.error());
+        return ptr;
+    }
+
+
+
 
 
 }

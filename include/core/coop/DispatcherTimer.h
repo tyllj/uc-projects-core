@@ -6,7 +6,7 @@
 #define UC_CORE_DISPATCHERTIMER_H
 
 #include <stdint.h>
-#include "Future.h"
+#include "core/Future.h"
 #include "core/Tick.h"
 #include "core/shared_ptr.h"
 
@@ -15,11 +15,14 @@ namespace core { namespace coop {
     public:
         template<typename TFunctor>
         DispatcherTimer(IDispatcher& dispatcher, uint64_t interval, TFunctor onTick) {
-            _future = core::coop::async([&last = _last, interval, onTick](){
+            _future = core::async([&last = _last, interval, onTick](){
                 onTick();
                 return yieldDelay(interval);
             }).runOn(dispatcher);
         }
+
+        DispatcherTimer(const DispatcherTimer&) = delete;
+        DispatcherTimer(DispatcherTimer&&) = default;
 
         ~DispatcherTimer() {
             _future->cancel();

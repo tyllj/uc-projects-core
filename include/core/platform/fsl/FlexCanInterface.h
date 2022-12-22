@@ -12,7 +12,7 @@
 #include <fsl_flexcan.h>
 #include "core/shared_ptr.h"
 #include "core/can/ICanInterface.h"
-#include "core/coop/Future.h"
+#include "core/Future.h"
 
 #define RX_MESSAGE_BUFFER_NUM (9)
 #define RX_RTR_BUFFER_NUM (10)

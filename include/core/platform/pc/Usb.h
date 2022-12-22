@@ -21,42 +21,46 @@ namespace core { namespace platform { namespace pc { namespace usb {
     constexpr char FTDI_PRODUCT_ID0[] = "0403:6001";
     constexpr char FTDI_PRODUCT_ID1[] = "0403:6011";
     constexpr char ARDUINO_PRODUCT_ID[] = "03eb:204b";
+    constexpr char CP210X_PRODUCT_ID[] = "10c4:ea60";
 
     template<size_t n>
-    void findUsbSerialPortByProductId(char (&devicePath)[n], const char* vid, const char* pid) {
-        findUsbSerialPortByProductId(devicePath, n, vid, pid);
+    auto findUsbSerialPortByProductId(char (&devicePath)[n], const char* vid, const char* pid) -> core::ErrorOr<void> {
+        return findUsbSerialPortByProductId(devicePath, n, vid, pid);
     }
 
-    core::CString findPortNameByUsbProductId(const char* vid, const char* pid) {
+     auto findPortNameByUsbProductId(const char* vid, const char* pid) -> core::ErrorOr<core::CString> {
         char devicePath[32] = { 0 };
-        findUsbSerialPortByProductId(devicePath, vid, pid);
-        return { devicePath };
+        TRY(findUsbSerialPortByProductId(devicePath, vid, pid));
+        return core::CString(devicePath);
     }
 
-    core::CString findPortNameByUsbProductId(const char* pidColonVid) {
+    auto findPortNameByUsbProductId(const char* pidColonVid) -> core::ErrorOr<core::CString> {
         char vid[5] = {0};
         char pid[5] = {0};
 
-        if (core::cstrings::length(pidColonVid) != 9)
-            return {};
+        VERIFY(core::cstrings::length(pidColonVid) == 9, "USB product id has unexpected length.");
         core::cstrings::copyTo(vid, pidColonVid, 4);
         core::cstrings::copyTo(pid, &pidColonVid[5], 4);
         return findPortNameByUsbProductId(vid, pid);
     }
 
-    core::CString findCh340() {
+    auto findCh340() -> core::ErrorOr<core::CString> {
         return findPortNameByUsbProductId(CH340_PRODUCT_ID);
     }
 
-    core::CString findFtdi() {
-        core::CString result = findPortNameByUsbProductId(FTDI_PRODUCT_ID0);
-        if (!result)
-            result = findPortNameByUsbProductId(FTDI_PRODUCT_ID1);
+    auto findFtdi() -> core::ErrorOr<core::CString> {
+        auto result = findPortNameByUsbProductId(FTDI_PRODUCT_ID0);
+        if (result.is_error())
+            return findPortNameByUsbProductId(FTDI_PRODUCT_ID1);
         return result;
     }
 
-    core::CString findArduino() {
+    auto findArduino() -> core::ErrorOr<core::CString> {
         return findPortNameByUsbProductId(ARDUINO_PRODUCT_ID);
+    }
+
+    auto findCp210x() -> core::ErrorOr<core::CString> {
+        return findPortNameByUsbProductId(CP210X_PRODUCT_ID);
     }
 }}}}
 #endif //UC_CORE_OSAPI_H

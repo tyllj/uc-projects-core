@@ -9,75 +9,61 @@
 #include <stdexcept>
 #include <string.h>
 #include <windows.h>
+#include <memory>
 #include <Setupapi.h>
+#include "core/Convert.h"
+#include "core/Error.h"
+#include "core/Defer.h"
 
 namespace core { namespace platform { namespace pc { namespace usb {
-    void findUsbSerialPortByProductId(char* devicePath, size_t n, const char* vid, const char* pid) {
-        HDEVINFO DeviceInfoSet = {};
-        DWORD DeviceIndex =0;
-        SP_DEVINFO_DATA DeviceInfoData = {};
-        constexpr char DevEnum[] = "USB";
-        char ExpectedDeviceId[80] = {0}; //Store hardware id
-        BYTE szBuffer[1024] = {0};
-        DEVPROPTYPE ulPropertyType = {};
-        DWORD dwSize = 0;
-
-        ZeroMemory(devicePath, n);
-    
+    auto findUsbSerialPortByProductId(char* devicePath, size_t n, const char* vid, const char* pid) -> core::ErrorOr<void> {
+        memset(devicePath, 0, n);
         //create device hardware id
-        strcpy_s(ExpectedDeviceId, "vid_");
-        strcat_s(ExpectedDeviceId, vid);
-        strcpy_s(ExpectedDeviceId, "&pid_");
-        strcat_s(ExpectedDeviceId, pid);
-        //SetupDiGetClassDevs returns a handle to a device information set
-        DeviceInfoSet = SetupDiGetClassDevsA(
-                NULL,
-                DevEnum,
-                NULL,
-                DIGCF_ALLCLASSES | DIGCF_PRESENT);
-        if (DeviceInfoSet == INVALID_HANDLE_VALUE)
-            return;
+        char expectedDeviceId[32] = {0};
+        core::StringBuilder(expectedDeviceId)
+                .append("vid_")
+                .append(vid)
+                .append("&pid_")
+                .append(pid);
 
-        DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+        //SetupDiGetClassDevs returns a handle to a device information set
+        auto deviceInfoSet = SetupDiGetClassDevsA(NULL, "USB", NULL, DIGCF_ALLCLASSES | DIGCF_PRESENT);
+        VERIFY(deviceInfoSet != INVALID_HANDLE_VALUE, "Could not get device class info for USB.");
+        auto closeInfoSet = core::Defer([=] { SetupDiDestroyDeviceInfoList(deviceInfoSet); });
+
+        auto deviceInfoData = SP_DEVINFO_DATA();
+        deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
         //Receive information about an enumerated device
-        while (SetupDiEnumDeviceInfo(
-                DeviceInfoSet,
-                DeviceIndex,
-                &DeviceInfoData)) {
-            DeviceIndex++;
+        BYTE propertyBuffer[1024] = {0};
+        for (auto i = DWORD{0}; SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++) {
             //Retrieves a specified Plug and Play device property
-            if (SetupDiGetDeviceRegistryProperty (DeviceInfoSet, &DeviceInfoData, SPDRP_HARDWAREID,
-                                                  &ulPropertyType, (BYTE*)szBuffer,
-                                                  sizeof(szBuffer),   // The size, in bytes
-                                                  &dwSize)) {
-                HKEY hDeviceRegistryKey;
-                //Get the key
-                hDeviceRegistryKey = SetupDiOpenDevRegKey(DeviceInfoSet, &DeviceInfoData,DICS_FLAG_GLOBAL, 0,DIREG_DEV, KEY_READ);
-                if (hDeviceRegistryKey == INVALID_HANDLE_VALUE) {
-                    //DWORD Error = GetLastError();
-                    throw std::runtime_error("Could not open device registry.");
-                } else {
-                    // Read in the name of the port
-                    char pszPortName[32];
-                    DWORD dwPortNameSize = sizeof(pszPortName);
-                    DWORD dwType = 0;
-                    if( (RegQueryValueExA(hDeviceRegistryKey,"PortName", NULL, &dwType, (LPBYTE) pszPortName, &dwSize) == ERROR_SUCCESS) && (dwType == REG_SZ)) {
-                        // Check if it really is a com port
-                        if( strnicmp( pszPortName, "COM", 3) == 0) {
-                            int nPortNr = atoi( pszPortName + 3 );
-                            if( nPortNr != 0 ) {
-                                strncpy_s(devicePath, n, pszPortName, dwPortNameSize);
-                            }
-                        }
+            auto propertyType = DEVPROPTYPE();
+            auto size = DWORD();
+            if (SetupDiGetDeviceRegistryPropertyA(deviceInfoSet, &deviceInfoData, SPDRP_HARDWAREID,
+                                                  &propertyType, (BYTE *) propertyBuffer,
+                                                  sizeof(propertyBuffer),   // The size, in bytes
+                                                  &size)) {
+                auto hDeviceRegistryKey = SetupDiOpenDevRegKey(deviceInfoSet, &deviceInfoData, DICS_FLAG_GLOBAL, 0,
+                                                               DIREG_DEV, KEY_READ);
+                VERIFY(hDeviceRegistryKey != INVALID_HANDLE_VALUE, "Could not open device registry key.");
+                auto closeRegistryKey = core::Defer([=] { RegCloseKey(hDeviceRegistryKey); });
+
+                // Read in the name of the port
+                char portName[32];
+                auto portNameLength = sizeof(portName);
+                auto registryValueType = DWORD();
+                if ((RegQueryValueExA(hDeviceRegistryKey, "PortName", NULL, &registryValueType, (LPBYTE) portName,
+                                      &size) == ERROR_SUCCESS) && (registryValueType == REG_SZ)) {
+                    // Check if it really is a com port
+                    if (strnicmp(portName, "COM", 3) == 0 && core::convert::toInt32(portName + 3) != 0) {
+                        strncpy_s(devicePath, n, portName, portNameLength);
+                        return {};
                     }
-                    // Close the key now that we are finished with it
-                    RegCloseKey(hDeviceRegistryKey);
                 }
             }
         }
-        if (DeviceInfoSet) {
-            SetupDiDestroyDeviceInfoList(DeviceInfoSet);
-        }
+        return core::Error(0x005BFA11, "No serial port found for this usb device type.");
     }
 }}}}
 

@@ -10,6 +10,7 @@
 
 // Inspired by SerenityOS error handling: https://github.com/SerenityOS/serenity/blob/master/AK/Try.h
 
+
 #define TRY(expression)                                   \
     ({                                                    \
         auto _temporary_result = (expression);            \
@@ -65,6 +66,13 @@
     ({                                                    \
         if (_temporary_result.is_error()) [[unlikely]]    \
             { cleanup; }                                  \
+    })
+
+#ifdef VERIFY
+#undef VERIFY
+#endif
+#define VERIFY(condition, msg) ({                         \
+        TRY(core::verify(condition, msg));                \
     })
 
 #endif //__TRY_H__

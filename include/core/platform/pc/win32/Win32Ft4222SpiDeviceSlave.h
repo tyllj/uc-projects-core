@@ -43,6 +43,7 @@ namespace core { namespace platform { namespace pc {
         };
 
         auto read(uint8_t *buffer, size_t n) -> size_t final {
+            core::enforceNotNull(buffer);
             auto _ = std::lock_guard(_mtx);
             auto sizeTransferred = uint16_t();
             _ftLib.spiSlaveRead(_port, buffer, n, &sizeTransferred);
@@ -50,6 +51,7 @@ namespace core { namespace platform { namespace pc {
         }
 
         auto write(const uint8_t *buffer, size_t n) -> void final {
+            core::enforceNotNull(buffer);
             auto _ = std::lock_guard(_mtx);
             auto sizeTransferred = uint16_t();
             while (n > 0) {
@@ -59,7 +61,7 @@ namespace core { namespace platform { namespace pc {
         }
 
         auto transferFullDuplex(const uint8_t *sendBuffer, uint8_t *receiveBuffer, size_t n) -> size_t final {
-            throw std::logic_error("Not implemented.");
+            core::terminateOnUnhandledError(core::NotImplementedError());
         }
 
         auto reset() -> void {
