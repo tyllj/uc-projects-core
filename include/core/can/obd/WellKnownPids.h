@@ -11,6 +11,7 @@
 #include "core/StringBuilder.h"
 
 namespace core { namespace can { namespace obd {
+
     struct WellKnownPid {
         const uint8_t pid;
         const uint8_t length;
@@ -187,6 +188,21 @@ namespace core { namespace can { namespace obd {
         { 0xA4 , 4, "Transmission Actual Gear", [](ObdPidValue val){ return 0.0f; },                                                                                                          [](core::StringBuilder sb, ObdPidValue val, float f) { sb.appendHex(val.asUint16()); } },
     };
 
+    auto toString(char* str, size_t n, ObdPidValue pidValue) -> void {
+        auto sb = StringBuilder(str, n);
+        wellKnownPids[pidValue.Pid].toString(sb, pidValue, wellKnownPids[pidValue.Pid].toFloat(pidValue));
+    }
+
+    template<size_t n>
+    auto toString(char (&str)[n], ObdPidValue pidValue) -> void {
+        toString(str, n, pidValue);
+    }
+
+    auto toString(ObdPidValue pidValue) -> CString {
+        auto sb = StringBuilder();
+        wellKnownPids[pidValue.Pid].toString(sb, pidValue, wellKnownPids[pidValue.Pid].toFloat(pidValue));
+        return sb.toString();
+    }
 
 
 }}}

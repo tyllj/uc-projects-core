@@ -28,10 +28,10 @@
 #include "core/Tick.h"
 #include "core/coop/DispatcherTimer.h"
 #include "core/platform/pc/FileSystemImpl.h"
+#include "core/can/obd/WellKnownPids.h"
 
 
 int main() {
-
     core::initializeEnvironment();
     core::coop::MainLoopDispatcher<16> dispatcher;
 
@@ -45,24 +45,18 @@ int main() {
     core::can::UsbCanSeeed can(usb);
 
     core::io::ConsoleWriter out;
+    core::io::ConsoleReader in;
     core::can::obd::OnBoardDiagnostics obd(dispatcher, can);
 
     core::can::obd::ObdRequest query;
-    query.add(0x0C, 2);
-    auto f = obd.getCurrentData(query).share();
+    query.add(core::can::obd::wellKnownPids[0x0C].pid);
 
-    dispatcher.run(f);
-    for (;;) {
-        dispatcher.dispatchOne();
-        core::sleepms(10);
-        if (f->isCompleted()) {
-            auto rpm = f->get().getByPid(0x0C).asUint16() / 4;
-            out.writeLine(core::StringBuilder() + "EngineSpeed=" + rpm);
-            auto nextRequest = obd.getCurrentData(query).share();
-            f.swap(nextRequest);
-        }
+    while (in.read() == -1) {
+        auto rpm = obd.getCurrentData(query)
+                .awaitOn(dispatcher)
+                .at(0);
+        out.writeLine(core::StringBuilder() + "EngineSpeed=" + core::can::obd::toString(rpm));
     }
-    system("pause");
 }
 
 #endif
