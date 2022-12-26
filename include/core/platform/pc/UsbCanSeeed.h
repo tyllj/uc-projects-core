@@ -76,11 +76,11 @@ namespace core { namespace can {
             init();
         }
 
-        virtual void writeFrame(CanFrame& canFrame) final {
+        virtual void writeFrame(const CanFrame &canFrame) final {
             CANUSB_FRAME frame = CANUSB_FRAME_STANDARD;
             unsigned char id_lsb = canFrame.id & 0xFF;
             unsigned char id_msb = (canFrame.id >> 8) & 0x07;
-            unsigned char* data = canFrame.payload;
+            const unsigned char* data = canFrame.payload;
             int data_length_code = canFrame.length;
 #define MAX_FRAME_SIZE 13
             int data_frame_len = 0;

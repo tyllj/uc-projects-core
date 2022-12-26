@@ -18,7 +18,7 @@
 #include "core/platform/pc/FileSystemImpl.h"
 #include "core/cli/Ush.h"
 #include "core/platform/pc/UsbCanSeeed.h"
-#include "core/coop/Future.h"
+#include "core/Future.h"
 #include "core/unique_ptr.h"
 #include "core/coop/MainLoopDispatcher.h"
 #include "core/can/IsoTpSocket.h"
@@ -29,19 +29,15 @@
 #include "core/coop/DispatcherTimer.h"
 #include "core/platform/pc/FileSystemImpl.h"
 #include "core/can/obd/WellKnownPids.h"
-
+#include "core/Try.h"
 
 int main() {
     core::initializeEnvironment();
     core::coop::MainLoopDispatcher<16> dispatcher;
 
-    core::CString portName = core::platform::pc::usb::findCh340();
-    if (core::cstrings::isNullOrEmpty(portName))
-        throw std::runtime_error("CAN interface not found.");
+    core::CString portName = DARE(core::platform::pc::usb::findCh340());
 
-    core::platform::pc::SerialPort usb(portName);
-    usb.baudRate(core::can::USBCAN_SERIAL_BAUD);
-    usb.open();
+    auto usb = DARE(core::platform::pc::SerialPort::open(portName, core::can::USBCAN_SERIAL_BAUD));
     core::can::UsbCanSeeed can(usb);
 
     core::io::ConsoleWriter out;
@@ -52,9 +48,9 @@ int main() {
     query.add(core::can::obd::wellKnownPids[0x0C].pid);
 
     while (in.read() == -1) {
-        auto rpm = obd.getCurrentData(query)
+        auto rpm = DARE(obd.getCurrentData(query)
                 .awaitOn(dispatcher)
-                .at(0);
+                .at(0));
         out.writeLine(core::StringBuilder() + "EngineSpeed=" + core::can::obd::toString(rpm));
     }
 }

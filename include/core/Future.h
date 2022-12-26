@@ -33,7 +33,8 @@ namespace core {
 
     template<typename TResult>
     struct FutureResult {
-        static auto Completed(TResult&& result) -> FutureResult<TResult> { return FutureResult(etl::optional<TResult>(Nothing())); }
+        static auto Completed(TResult result) -> FutureResult<TResult> { return FutureResult(etl::optional<TResult>(result)); }
+        static auto Completed(TResult&& result) -> FutureResult<TResult> { return FutureResult(etl::optional<TResult>(result)); }
         static auto Incomplete() -> FutureResult<TResult> { return FutureResult(etl::optional<TResult>(etl::nullopt)); }
         static auto Delayed(uint64_t delay) -> FutureResult<TResult> { return FutureResult(delay); }
         etl::optional<TResult> value;
@@ -49,8 +50,13 @@ namespace core {
         return FutureResult<TResult>::Completed(value);
     }
 
+    template<typename TResult>
+    auto yieldReturn(TResult&& value) -> FutureResult<TResult>{
+        return FutureResult<TResult>::Completed(value);
+    }
+
     auto yieldReturn() -> FutureResult<Nothing> {
-        return FutureResult<Nothing>::Completed({});
+        return FutureResult<Nothing>::Completed(nothing);
     }
 
     template<typename TResult>
@@ -202,7 +208,7 @@ namespace core {
         }
 
         auto share() -> shared_ptr<Future<TResult, TSliceFunctor>> {
-            return shared_ptr<Future<TResult, TSliceFunctor>>(new Future<TResult, TSliceFunctor>(*this));
+            return shared_ptr<Future<TResult, TSliceFunctor>>(new Future<TResult, TSliceFunctor>(etl::move(*this)));
         }
 
         auto runOn(core::IDispatcher& d) -> decltype(share()) {

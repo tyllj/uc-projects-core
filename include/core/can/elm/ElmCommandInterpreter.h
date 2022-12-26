@@ -28,7 +28,7 @@ namespace core { namespace can { namespace elm {
         };
 
     public:
-        ElmCommandInterpreter(core::coop::IDispatcher& dispatcher, core::io::Stream& tty, ICanInterface &can)
+        ElmCommandInterpreter(core::IDispatcher& dispatcher, core::io::Stream& tty, ICanInterface &can)
                 :
                 _dispatcher(dispatcher),
                 _in(tty),
@@ -46,11 +46,11 @@ namespace core { namespace can { namespace elm {
         }
 
     private:
-        void startBackgroundWorker(coop::IDispatcher &dispatcher) {
+        void startBackgroundWorker(IDispatcher &dispatcher) {
             beginAcceptInput();
-            _backgroundWorkerTask = core::coop::async([this]() {
+            _backgroundWorkerTask = async([this]() {
                 this->process();
-                return core::coop::yieldContinue();
+                return yieldContinue();
             }).runOn(dispatcher);
         }
 
@@ -467,14 +467,14 @@ namespace core { namespace can { namespace elm {
     private:
         char _input[40] = {0};
         char _command[40] = {0};
-        core::coop::IDispatcher& _dispatcher;
+        IDispatcher& _dispatcher;
         ElmRuntimeConfiguration _config;
         core::io::StreamReader _in;
         core::io::StreamWriter _out;
         core::StringBuilder _prompt;
         core::can::ICanInterface& _can;
         etl::optional<core::can::IsoTpSocket> _isotp;
-        core::shared_ptr<coop::IFuture> _backgroundWorkerTask;
+        core::shared_ptr<IFuture> _backgroundWorkerTask;
         State _state;
         uint64_t _startedReceiving;
         bool _bytesReceived;

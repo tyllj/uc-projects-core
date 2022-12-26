@@ -20,13 +20,14 @@
 #include <string.h>
 #include <stdexcept>
 #include "core/Defer.h"
+#include "core/Try.h"
 
 namespace core { namespace platform { namespace pc {
     class LinuxSerialPort : public io::Stream {
     private:
         struct Finalizer {
             Finalizer(int handle) : _handle(handle) {}
-            auto operator()() -> void { ::close(_handle); /* also unlocks according to manpage. */ }
+            auto operator()() const -> void { ::close(_handle); /* also unlocks according to manpage. */ }
             int _handle;
         };
 
@@ -38,38 +39,38 @@ namespace core { namespace platform { namespace pc {
             auto port = ::open(portName, O_RDWR | O_NOCTTY | O_NDELAY);
             if (port == -1)
                 return core::Error(0x0232FA11, "Could not open port.");
-            auto portFinalizer = core::Defer(Finalizer(portname));
+            auto portFinalizer = core::Defer(Finalizer(port));
 
             if (flock(port, LOCK_EX|LOCK_NB) != 0)
                 return core::Error(0x0232FA11, "Port is used by an other process");
 
             termios portAttributes;
-            if (tcgetattr(_handle, &portAttributes) == -1)
+            if (tcgetattr(port, &portAttributes) == -1)
                 return core::Error(0x0232FA11, "Could not read current port settings.");
 
             // Hardcoded mode: 8 data bits, no parity, 1 stop bit
             int32_t portStatus;
-            bool error = tcsetattr(_handle, TCSANOW, &portAttributes) == -1;
+            bool error = tcsetattr(port, TCSANOW, &portAttributes) == -1;
             portAttributes.c_cflag = CS8 | CLOCAL | CREAD;
             portAttributes.c_iflag = IGNPAR;
             portAttributes.c_oflag = 0;
             portAttributes.c_lflag = 0;
             portAttributes.c_cc[VMIN] = 0;      /* block until n bytes are received */
             portAttributes.c_cc[VTIME] = 0;     /* block until a timer expires (n * 100 mSec.) */
-            cfsetispeed(&portAttributes, TRY(baudToSpeed(_baudRate)));
-            cfsetospeed(&portAttributes, TRY(baudToSpeed(_baudRate)));
+            cfsetispeed(&portAttributes, TRY(baudToSpeed(baudRate)));
+            cfsetospeed(&portAttributes, TRY(baudToSpeed(baudRate)));
 
             if(!error)
-                error |= ioctl(_handle, TIOCMGET, &portStatus) == -1;
+                error |= ioctl(port, TIOCMGET, &portStatus) == -1;
             portStatus |= TIOCM_DTR;    /* turn on DTR */
             portStatus |= TIOCM_RTS;    /* turn on RTS */
             if(!error)
-                error |= ioctl(_handle, TIOCMSET, &portStatus) == -1;
+                error |= ioctl(port, TIOCMSET, &portStatus) == -1;
 
             if (error)
                 return core::Error(0x0232FA11, "Could not reconfigure port.");
 
-            return LinuxSerialPort(port, portFinalizer);
+            return LinuxSerialPort(port, etl::move(portFinalizer));
         }
 
 
@@ -101,9 +102,9 @@ namespace core { namespace platform { namespace pc {
             ::write(_handle, const_cast<unsigned char*>(&buffer[offset]), count);
         }
     private:
-        explicit LinuxSerialPort(int handle, core::Defer<Finalizer>&& finalizer) :  _port(handle), _finalizer(std::move(finalizer)) { }
+        explicit LinuxSerialPort(int handle, core::Defer<Finalizer>&& finalizer) :  _handle(handle), _finalizer(std::move(finalizer)) { }
 
-        static baudToSpeed(uint32_t baudrate) const -> core::ErrorOr<speed_t> {
+        static auto baudToSpeed(uint32_t baudrate) -> core::ErrorOr<speed_t> {
             switch(baudrate) {
                 case 50 : return B50;
                 case 75 : return B75;

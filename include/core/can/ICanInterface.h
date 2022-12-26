@@ -24,7 +24,7 @@ namespace core { namespace can {
 
 #pragma pack(push, 1)
     struct CanFrame {
-        canid_t id;
+        canid_t id = 0;
         bool isRemoteRequest = false; // value of the rtr-bit
         uint8_t length = 8; // value of the dlc
         uint8_t payload[8];
@@ -35,7 +35,7 @@ namespace core { namespace can {
     public:
         virtual void filter(canid_t filter) = 0;
         virtual void mask(canid_t filter) = 0;
-        virtual void writeFrame(CanFrame& canFrame) = 0;
+        virtual void writeFrame(const CanFrame& canFrame) = 0;
         virtual bool tryReadFrame(CanFrame& outCanFrame) = 0;
         virtual ~ICanInterface() = default;
     };

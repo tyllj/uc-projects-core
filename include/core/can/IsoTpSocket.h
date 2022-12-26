@@ -45,8 +45,7 @@ namespace core { namespace can {
 
     class IsoTpSocket {
     public:
-
-        IsoTpSocket(core::coop::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId);
+        IsoTpSocket(core::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId); // TODO: wrap in ErrorOr-factory and ensure that only a single instance is created.
         IsoTpSocket(IsoTpSocket& socket) = delete;
         IsoTpSocket(IsoTpSocket&& socket);
         ~IsoTpSocket();
@@ -56,13 +55,14 @@ namespace core { namespace can {
         void receiveAndTransmit();
     private:
         iso15765_t createIsoTpHandler() const;
-        void startBackgroundWorker(core::coop::IDispatcher &dispatcher);
+        void startBackgroundWorker(core::IDispatcher &dispatcher);
 
 
     private:
         ICanInterface& _can;
         iso15765_t _isotp;
-        shared_ptr<coop::IFuture> _backgroundWorkerTask;
+        shared_ptr<IFuture> _backgroundWorkerTask;
+        bool _owns;
     };
 }}
 namespace core { namespace can {
@@ -122,14 +122,6 @@ extern "C" {
     }
 }
 
-    IsoTpSocket::IsoTpSocket(core::coop::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId) : _can(canInterface) {
-        iso15765_t handler = createIsoTpHandler();
-        _isotp = handler;
-        core_can_isotp_glue_init(this, &_can, txId, rxId);
-        iso15765_init(&_isotp);
-        startBackgroundWorker(dispatcher);
-    }
-
     iso15765_t IsoTpSocket::createIsoTpHandler() const {
         iso15765_t handler = {};
         handler.fr_addr_md = N_ADM_NORMAL;
@@ -145,13 +137,23 @@ extern "C" {
         return handler;
     }
 
-    IsoTpSocket::IsoTpSocket(IsoTpSocket&& socket) : _can(socket._can), _isotp(socket._isotp) {
+    IsoTpSocket::IsoTpSocket(core::IDispatcher& dispatcher, ICanInterface& canInterface, canid_t txId, canid_t rxId) : _can(canInterface), _owns(true) {
+        iso15765_t handler = createIsoTpHandler();
+        _isotp = handler;
+        core_can_isotp_glue_init(this, &_can, txId, rxId);
+        iso15765_init(&_isotp);
+        startBackgroundWorker(dispatcher);
+    }
 
+    IsoTpSocket::IsoTpSocket(IsoTpSocket&& socket) : _can(socket._can), _isotp(socket._isotp) {
+        socket._owns = false;
     }
 
     IsoTpSocket::~IsoTpSocket() {
-        _backgroundWorkerTask->cancel();
-        core_can_isotp_glue_deinit(this);
+        if (_owns) {
+            _backgroundWorkerTask->cancel();
+            core_can_isotp_glue_deinit(this);
+        }
     }
 
     void IsoTpSocket::send(uint8_t *data, uint16_t length) {
@@ -194,10 +196,10 @@ extern "C" {
         iso15765_process(&_isotp);
     }
 
-    void IsoTpSocket::startBackgroundWorker(coop::IDispatcher &dispatcher) {
-        _backgroundWorkerTask = core::coop::async([self = this](){
+    void IsoTpSocket::startBackgroundWorker(IDispatcher &dispatcher) {
+        _backgroundWorkerTask = core::async([self = this](){
             self->receiveAndTransmit();
-            return coop::yieldContinue();
+            return yieldContinue();
         }).runOn(dispatcher);
     }
 }}

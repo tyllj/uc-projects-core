@@ -24,41 +24,26 @@ namespace core { namespace can { namespace obd {
     constexpr uint8_t OBD_VEHICLE_INFORMATION = 0x09;
     constexpr uint8_t OBD_GET_PERMAMENT_DTC = 0x0A;
 
-    template<typename TFunctor>
-    class OnScopeExit {
-    public:
-        OnScopeExit(TFunctor functor) : _scopeExitFunctor(functor), _owner(true) {}
-
-        OnScopeExit(OnScopeExit& other) = delete;
-        OnScopeExit(OnScopeExit&& other) : _scopeExitFunctor(other._scopeExitFunctor), _owner(other._owner) {
-            other._owner = false;
-        }
-        ~OnScopeExit() {
-            if (_owner)
-                _scopeExitFunctor();
-        }
-    private:
-        TFunctor _scopeExitFunctor;
-        bool _owner;
-    };
-
     class OnBoardDiagnostics {
     public:
 
 
-        OnBoardDiagnostics(core::coop::IDispatcher& dispatcher, ICanInterface& can, canid_t ecuId = 0x07E0) : _dispatcher(dispatcher), _can(can), _ecuId(ecuId) {
+        OnBoardDiagnostics(core::IDispatcher& dispatcher, ICanInterface& can, canid_t ecuId = 0x07E0) : _dispatcher(dispatcher), _can(can), _ecuId(ecuId) {
 
         }
 
         auto getCurrentData(ObdRequest request) {
+            uint8_t length = 1;
             uint8_t queryMsg[7] = {OBD_GET_CURRENT_DATA};
-            uint8_t i = 0;
-            for (; request.at(i).has_value(); i++)
-                queryMsg[i + 1] = request.at(i).value().Pid;
-            initTp(); // TODO: write an RAII wrapper which gets moved into lambda
-            _isotp->send(queryMsg, i + 1);
 
-            return core::coop::async([this, request = request, teardown = OnScopeExit([this]{deinitTp();})](){
+            for (uint8_t i = 0; i < request.count(); i++) {
+                queryMsg[i + 1] = request.at(i).value().Pid;
+                length++;
+            }
+            initTp(); // TODO: write an RAII wrapper which gets moved into lambda
+            _isotp->send(queryMsg, length);
+
+            auto t = core::async([this, request = request, finally = Defer([this]{deinitTp();})](){
                 IsoTpSocket& isotp = this->_isotp.value();
                 isotp.receiveAndTransmit();
                 IsoTpPacket p;
@@ -74,10 +59,11 @@ namespace core { namespace can { namespace obd {
                         response.update(pidValue);
                     }
                     this->deinitTp();
-                    return coop::yieldReturn(response);
+                    return yieldReturn<ObdRequest>(response);
                 }
-                return coop::yieldDelay<ObdRequest>(50);
+                return yieldDelay<ObdRequest>(50);
             });
+            return etl::move(t);
         }
 
         auto getStoredTroubleCodes(ObdTroubleCode* destination, size_t limit) {
@@ -85,7 +71,7 @@ namespace core { namespace can { namespace obd {
             initTp();
             _isotp->send(queryMsg, sizeof(queryMsg));
 
-            return core::coop::async([this, destination = destination, limit = limit](){
+            return core::async([this, destination = destination, limit = limit, finally = Defer([this]{deinitTp();})](){
                 auto& isotp = this->_isotp.value();
                 isotp.receiveAndTransmit();
                 auto p = IsoTpPacket();
@@ -100,9 +86,9 @@ namespace core { namespace can { namespace obd {
                         destination[i++] = { a, b };
                     }
                     this->deinitTp();
-                    return coop::yieldReturn();
+                    return yieldReturn();
                 }
-                return coop::yieldDelay(50);
+                return yieldDelay(50);
             });
         }
 
@@ -124,7 +110,7 @@ namespace core { namespace can { namespace obd {
         }
 
     private:
-        core::coop::IDispatcher& _dispatcher;
+        core::IDispatcher& _dispatcher;
         core::can::ICanInterface& _can;
         etl::optional<IsoTpSocket> _isotp;
         canid_t _ecuId;

@@ -64,7 +64,7 @@ namespace core {
 #endif
     };
 
-    auto terminateOnUnhandledError(Error const& e) const {
+    auto terminateOnUnhandledError(Error const& e) -> void {
 #if defined(CORE_ERROR_MESSAGES)
         printf("\nUnhandled error: error_code(): %x (%i), what(): %s\n", e.error_code(), e.error_code(), e.what());
 #else

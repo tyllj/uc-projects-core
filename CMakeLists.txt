@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 project(uc-core C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(-fexceptions -Wall -Wextra -Wpedantic -Wno-unused-parameter -Werror)
+add_compile_options(-fexceptions -Wall -Wextra -Wno-pedantic -Wno-unused-parameter -Werror)
 
 include_directories(include)
 include_directories(lib)

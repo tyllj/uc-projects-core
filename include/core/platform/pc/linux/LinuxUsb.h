@@ -24,8 +24,8 @@ namespace core { namespace platform { namespace pc { namespace usb {
             auto closeProcess = core::Defer([fp] { pclose(fp); });
 
             /* Read first line of output. */
-            VERIFY(fgets(result, n - 1, fp) != NULL, "Command did not generate any output.")
-            return {}
+            VERIFY(fgets(result, n - 1, fp) != NULL, "Command did not generate any output.");
+            return {};
         };
 
         char command[128];

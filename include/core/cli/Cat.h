@@ -19,8 +19,14 @@ namespace core { namespace cli {
                 const char* path = sb.toString();
                 core::io::FileInfo file(workingDirectory, path);
                 if(file.exists()) {
-                    core::shared_ptr<core::io::Stream> fileStream = file.open(io::READ);
-                    core::io::StreamReader reader(*fileStream);
+                    auto fileStream = file.open(io::READ);
+                    if (fileStream.is_error()) {
+                        output.write("cat: ");
+                        output.write(path);
+                        output.writeLine(": Error opening file.");
+                        return 1;
+                    }
+                    core::io::StreamReader reader(*DARE(fileStream));
                     int32_t c;
                     while ((c = reader.read()) > -1) {
                         output.write(c);
