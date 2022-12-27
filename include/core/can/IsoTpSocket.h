@@ -19,9 +19,9 @@
 namespace core { namespace can {
     class IsoTpPacket {
     public:
-        IsoTpPacket() : _length(0), _data(core::unique_ptr<uint8_t[]>()) {}
+        IsoTpPacket() : _length(0), _data(etl::unique_ptr<uint8_t[]>()) {}
 
-        explicit IsoTpPacket(canid_t canid, size_t length) : _canid(canid), _length(length), _data(core::unique_ptr<uint8_t[]>(new uint8_t[length])) {
+        explicit IsoTpPacket(canid_t canid, size_t length) : _canid(canid), _length(length), _data(etl::unique_ptr<uint8_t[]>(new uint8_t[length])) {
 
         }
 
@@ -40,7 +40,7 @@ namespace core { namespace can {
     private:
         canid_t _canid;
         size_t _length;
-        core::unique_ptr<uint8_t[]> _data;
+        etl::unique_ptr<uint8_t[]> _data;
     };
 
     class IsoTpSocket {
