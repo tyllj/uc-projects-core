@@ -18,8 +18,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
 
     auto findUsbSerialPortByProductId(char *devicePath, size_t n, const char *vid, const char *pid) -> core::ErrorOr<void> {
         auto runCommand = [](char *result, size_t n, const char *c) -> core::ErrorOr<void> {
-            FILE *fp;
-            fp = popen(c, "r");
+            FILE *fp = popen(c, "r");
             VERIFY(fp != nullptr, "Could not run command.");
             auto closeProcess = core::Defer([fp] { pclose(fp); });
 
@@ -36,7 +35,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
                 continue; // device path doesn't exist, try next
 
             snprintf(command, sizeof(command), LINUX_QUERY_VID, devicePath);
-            runCommand(cmdOut, sizeof(cmdOut), command);
+            TRY(runCommand(cmdOut, sizeof(cmdOut), command));
             if (core::cstrings::isNullOrEmpty(cmdOut)
                 || !core::cstrings::contains(cmdOut, '\"')) {
                 core::cstrings::empty(devicePath);
@@ -49,7 +48,7 @@ namespace core { namespace platform { namespace pc { namespace usb {
                 continue;
 
             snprintf(command, sizeof(command), LINUX_QUERY_PID, devicePath);
-            runCommand(cmdOut, sizeof(cmdOut), command);
+            TRY(runCommand(cmdOut, sizeof(cmdOut), command));
             if (core::cstrings::isNullOrEmpty(cmdOut)
                 || !core::cstrings::contains(cmdOut, '\"')) {
                 core::cstrings::empty(devicePath);

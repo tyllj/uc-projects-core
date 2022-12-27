@@ -45,7 +45,7 @@ int main() {
     core::can::obd::OnBoardDiagnostics obd(dispatcher, can);
 
     core::can::obd::ObdRequest query;
-    query.add(core::can::obd::wellKnownPids[0x0C].pid);
+    DARE(query.add(core::can::obd::wellKnownPids[0x0C].pid));
 
     while (in.read() == -1) {
         auto rpm = DARE(obd.getCurrentData(query)
