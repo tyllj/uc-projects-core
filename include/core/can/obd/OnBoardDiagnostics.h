@@ -5,10 +5,11 @@
 #ifndef UC_CORE_ONBOARDDIAGNOSTICS_H
 #define UC_CORE_ONBOARDDIAGNOSTICS_H
 
+#include "etl/optional.h"
 #include "core/Future.h"
 #include "core/can/ICanInterface.h"
 #include "core/can/IsoTpSocket.h"
-#include "etl/optional.h"
+#include "core/Defer.h"
 #include "ObdRequest.h"
 #include "PidDefinitions.h"
 #include "ObdTroubleCode.h"

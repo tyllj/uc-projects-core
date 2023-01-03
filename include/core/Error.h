@@ -178,6 +178,14 @@ namespace core {
         return ptr;
     }
 
+    template<typename TPtr, size_t n = sizeof("A nullptr was found.")>
+    inline static auto verifyNotNull(TPtr ptr, const char (&errorMsg)[n] = "A nullptr was found.") -> ErrorOr<TPtr> {
+        if (static_cast<bool>(ptr) == false) [[unlikely]] {
+            return NullPointerError(errorMsg);
+        }
+        return ptr;
+    }
+
     template<typename T, size_t n = sizeof("A nullptr was found.")>
     inline static auto enforceNotNull(T* ptr, const char (&errorMsg)[n] = "A nullptr was found.") -> T* {
         auto v = verifyNotNull(ptr, errorMsg);
@@ -186,7 +194,13 @@ namespace core {
         return ptr;
     }
 
-
+    template<typename TPtr, size_t n = sizeof("A nullptr was found.")>
+    inline static auto enforceNotNull(TPtr ptr, const char (&errorMsg)[n] = "A nullptr was found.") -> TPtr&& {
+        auto v = verifyNotNull(ptr, errorMsg);
+        if (v.is_error())
+            terminateOnUnhandledError(v.error());
+        return etl::move(ptr);
+    }
 
 
 

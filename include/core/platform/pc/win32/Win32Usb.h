@@ -13,6 +13,7 @@
 #include <Setupapi.h>
 #include "core/Convert.h"
 #include "core/Error.h"
+#include "core/Try.h"
 #include "core/Defer.h"
 
 namespace core { namespace platform { namespace pc { namespace usb {

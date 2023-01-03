@@ -11,6 +11,8 @@ namespace core { namespace io {
 
     class TextWriter {
     public:
+        virtual ~TextWriter() = default;
+
         void setNewLine(core::cstrings::NewLineMode mode) {
             _newLineMode = mode;
         }

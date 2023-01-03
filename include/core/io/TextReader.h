@@ -6,9 +6,12 @@
 #define UC_CORE_TEXTREADER_H
 
 #include <stdint.h>
+
 namespace core { namespace io {
         class TextReader {
         public:
+            virtual ~TextReader() {}
+
             /*
              * Reads the next character from the text reader and advances the character position by one character.
              */

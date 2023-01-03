@@ -15,7 +15,7 @@ namespace core { namespace io {
             void write(char c) final {
                 putchar(c);
             }
-            virtual void flush() {}
+            virtual void flush() final {}
         };
     }};
 

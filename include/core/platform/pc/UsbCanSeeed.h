@@ -58,25 +58,21 @@ namespace core { namespace can {
             init();
         }
 
-        ~UsbCanSeeed() override {
-
-        }
-
-        virtual void filter(canid_t filter) final {
+        auto filter(canid_t filter) -> void final {
             if (_filter == filter)
                 return;
             _filter = filter;
             init();
         }
 
-        virtual void mask(canid_t mask) final {
+        auto mask(canid_t mask) -> void final {
             if (_mask == mask)
                 return;
             _mask = mask;
             init();
         }
 
-        virtual void writeFrame(const CanFrame &canFrame) final {
+        auto writeFrame(const CanFrame &canFrame) -> void final {
             CANUSB_FRAME frame = CANUSB_FRAME_STANDARD;
             unsigned char id_lsb = canFrame.id & 0xFF;
             unsigned char id_msb = (canFrame.id >> 8) & 0x07;
@@ -145,12 +141,12 @@ namespace core { namespace can {
         }
 
     private:
-        int frame_send(const unsigned char *frame, int frame_len) {
+        auto frame_send(const unsigned char *frame, int frame_len) -> int {
             _serialPort.write((const uint8_t*)(frame), 0, frame_len);
             return frame_len;
         }
 
-        void enforceInitTimegap() {
+        auto enforceInitTimegap() -> void {
             const uint64_t timegap = 50;
             uint64_t millisSinceInit = core::millisPassedSince(_lastInit);
             if (millisSinceInit < timegap)
@@ -194,7 +190,7 @@ namespace core { namespace can {
             _lastInit = core::millis();
         }
 
-        static CANUSB_SPEED canusb_int_to_speed(int speed) {
+        static auto canusb_int_to_speed(int speed) -> CANUSB_SPEED {
             switch (speed) {
                 case 1000000:
                     return CANUSB_SPEED_1000000;
@@ -225,7 +221,7 @@ namespace core { namespace can {
             }
         }
 
-        static int generate_checksum(const unsigned char *data, int data_len) {
+        static auto generate_checksum(const unsigned char *data, int data_len) -> int {
             int i, checksum;
 
             checksum = 0;
@@ -236,7 +232,7 @@ namespace core { namespace can {
             return checksum & 0xff;
         }
 
-        static bool frame_is_complete(const unsigned char *frame, int frame_len) {
+        static auto frame_is_complete(const unsigned char *frame, int frame_len) -> bool {
             if (frame_len > 0) {
                 if (frame[0] != 0xaa) {
                     /* Need to sync on 0xaa at start of frames, so just skip. */
