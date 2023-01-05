@@ -7,13 +7,13 @@
 
 #include <stdint.h>
 #include "core/Math.h"
-//#include <unistd.h>
 
 #include "core/platform/pc/Usb.h"
 #include "core/io/Stream.h"
 #include "core/shared_ptr.h"
 #include "core/can/ICanInterface.h"
 #include "core/Bits.h"
+#include "SerialPort.h"
 
 namespace core { namespace can {
     constexpr int32_t USBCAN_SERIAL_BAUD = 2000000;

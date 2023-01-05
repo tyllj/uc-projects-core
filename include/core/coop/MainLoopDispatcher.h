@@ -8,6 +8,7 @@
 #include "etl/vector.h"
 #include "etl/list.h"
 #include "core/Future.h"
+#include "core/Error.h"
 
 namespace core { namespace coop {
     enum class DispatcherDelayPolicy {
@@ -34,10 +35,22 @@ namespace core { namespace coop {
                 _tasks.insert(_current, future);
         }
 
-        auto await(core::shared_ptr<IFuture> future) -> void {
+        auto await(core::shared_ptr<IFuture> future) -> void  final {
             run(future);
-            while (!future->isCompleted())
+            while (!future->isCompleted()) {
                 dispatchOne();
+            }
+        }
+
+        auto await(core::shared_ptr<IFuture> future, uint64_t timeout) -> core::ErrorOr<void> final {
+            run(future);
+            auto startTime = core::millis();
+            while (!future->isCompleted()) {
+                if (core::millisPassedSince(startTime) > timeout)
+                    return core::Error(0xDEADBEA7, "Task timed out.");
+                dispatchOne();
+            }
+            return {};
         }
     private:
         typedef typename etl::list<core::shared_ptr<IFuture>, MAX_TASKS>::iterator TaskIterator;

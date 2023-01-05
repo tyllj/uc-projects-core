@@ -5,6 +5,7 @@
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include "core/Nothing.h"
@@ -24,7 +25,12 @@ namespace core {
             , _errorMessageLiteral(other._errorMessageLiteral)
 #endif
         {}
-        Error(Error&&) = default;
+
+        Error(Error&& other) : _code(other._code)
+#if defined(CORE_ERROR_MESSAGES)
+                , _errorMessageLiteral(other._errorMessageLiteral)
+#endif
+        {}
 
         template<size_t n>
         constexpr Error(int32_t code, const char (&message)[n]) : _code(code)
@@ -82,7 +88,7 @@ namespace core {
         ErrorOr(TResult const& result) : _result(result) {}
         ErrorOr(TResult&& result) : _result(etl::move(result)) {}
         ErrorOr(Error const& error) : _result(error) {}
-        ErrorOr(Error&& error) : _result(etl::move(error)) {}
+        ErrorOr(Error&& error) : _result(error) {}
         template <typename TErrorCode>
         ErrorOr(TErrorCode code) : _result(Error(static_cast<int32_t>(code))) {}
 
@@ -134,12 +140,14 @@ namespace core {
     public:
         ErrorOr(ErrorOr const&) = default;
         ErrorOr(ErrorOr&&) = default;
+        ErrorOr& operator=(ErrorOr&&) = default;
+        ErrorOr& operator=(ErrorOr const&) = default;
 
         ErrorOr() : ErrorOr<Nothing>({}) {}
         ErrorOr(Error const& error) : ErrorOr<Nothing>(error) {}
         ErrorOr(Error&& error) : ErrorOr<Nothing>(etl::move(error)) {}
-        template <typename TErrorCode>
-        ErrorOr(TErrorCode code) : ErrorOr<Nothing>(Error(static_cast<int32_t>(code))) {}
+        //template <typename TErrorCode>
+        //ErrorOr(TErrorCode code) : ErrorOr<Nothing>(Error(static_cast<int32_t>(code))) {}
 
         typedef void ResultType;
     };

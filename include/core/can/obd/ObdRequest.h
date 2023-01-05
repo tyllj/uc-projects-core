@@ -24,7 +24,7 @@ namespace core { namespace can { namespace obd {
 
         ErrorOr<void> add(ObdPidValue value) {
             if (_pidCount >= 6)
-                return Error::MaxNumberOfParameterIdsExceeded;
+                return core::Error(Error::MaxNumberOfParameterIdsExceeded);
 
             _pid[_pidCount++] = value;
             return {};
@@ -37,7 +37,7 @@ namespace core { namespace can { namespace obd {
                     return {};
                 }
             }
-            return Error::ParameterIdNotRegistered;
+            return core::Error(Error::ParameterIdNotRegistered);
         }
 
         ErrorOr<ObdPidValue> getByPid(uint8_t pid) const {

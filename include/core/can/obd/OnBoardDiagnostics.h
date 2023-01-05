@@ -27,11 +27,8 @@ namespace core { namespace can { namespace obd {
 
     class OnBoardDiagnostics {
     public:
-
-
-        OnBoardDiagnostics(core::IDispatcher& dispatcher, ICanInterface& can, canid_t ecuId = 0x07E0) : _dispatcher(dispatcher), _can(can), _ecuId(ecuId) {
-
-        }
+        OnBoardDiagnostics(core::IDispatcher& dispatcher, ICanInterface& can, canid_t ecuId = 0x07E0)
+            : _dispatcher(dispatcher), _can(can), _ecuId(ecuId) {}
 
         auto getCurrentData(ObdRequest request) {
             uint8_t length = 1;
@@ -44,7 +41,7 @@ namespace core { namespace can { namespace obd {
             initTp(); // TODO: write an RAII wrapper which gets moved into lambda
             _isotp->send(queryMsg, length);
 
-            auto t = core::async([this, request = request, finally = Defer([this]{deinitTp();})](){
+            auto t = core::async([this, request = request, finally = Defer([this]{deinitTp();})]() -> FutureResult<ObdRequest> {
                 IsoTpSocket& isotp = this->_isotp.value();
                 isotp.receiveAndTransmit();
                 IsoTpPacket p;

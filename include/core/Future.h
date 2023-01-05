@@ -13,7 +13,8 @@
 #include "core/Tick.h"
 #include "core/Math.h"
 #include "Nothing.h"
-
+#include "Error.h"
+#include "Try.h"
 namespace core {
     class IFuture {
     public:
@@ -29,6 +30,7 @@ namespace core {
     public:
         virtual auto run(shared_ptr<IFuture> future) -> void = 0;
         virtual auto await(shared_ptr<IFuture> future) -> void = 0;
+        virtual auto await(core::shared_ptr<IFuture> future, uint64_t timeout) -> core::ErrorOr<void> = 0;
     };
 
     template<typename TResult>
@@ -141,7 +143,7 @@ namespace core {
             return shared_ptr<FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor>>(new FutureWithContinuation<TResult, TParentSliceFunctor, TContinuationFunctor> { *this });
         }
 
-       auto runOn(core::IDispatcher& d) -> decltype(share()) {
+        auto runOn(core::IDispatcher& d) -> decltype(share()) {
             auto shared = share();
             d.run(shared);
             return shared;
@@ -150,6 +152,12 @@ namespace core {
         auto awaitOn(core::IDispatcher& d) -> TResult {
             auto shared = share();
             d.await(shared);
+            return shared.get();
+        }
+
+        auto awaitOn(core::IDispatcher& d, uint64_t timeout) -> ErrorOr<TResult> {
+            auto shared = share();
+            TRY(d.await(shared));
             return shared.get();
         }
 
@@ -220,6 +228,12 @@ namespace core {
         auto awaitOn(core::IDispatcher& d) -> TResult {
             auto shared = share();
             d.await(shared);
+            return shared->get();
+        }
+
+        auto awaitOn(core::IDispatcher& d, uint64_t timeout) -> ErrorOr<TResult> {
+            auto shared = share();
+            TRY(d.await(shared, timeout));
             return shared->get();
         }
 

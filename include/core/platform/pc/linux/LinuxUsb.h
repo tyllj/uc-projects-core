@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "core/CStrings.h"
+#include "core/Try.h"
+#include "core/Defer.h"
 
 namespace core { namespace platform { namespace pc { namespace usb {
     static constexpr char LINUX_QUERY_VID[] = "udevadm info -a -n %s | grep '{idVendor}' | head -n1";
